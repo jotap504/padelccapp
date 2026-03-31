@@ -1,0 +1,3 @@
+proyect url: https://zeumvhcegjxkyxxsrhnf.supabase.co
+anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpldW12aGNlZ2p4a3l4eHNyaG5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTIyMjQsImV4cCI6MjA5MDQ4ODIyNH0.B_H3ymhGwdD6_m8AdjVw3i9BWd7KjIChAsa661MXkyc
+
