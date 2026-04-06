@@ -206,7 +206,7 @@ export default function PromotionProgress() {
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.wins_same_level} / {playerStatus?.wins_same_level + promotionProgress.missing_requirements.matches_won_same_level}
+                  {playerStatus?.wins_same_level || 0} / {(playerStatus?.wins_same_level || 0) + (promotionProgress?.missing_requirements?.matches_won_same_level || 0)}
                 </div>
               </div>
 
@@ -230,7 +230,7 @@ export default function PromotionProgress() {
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.wins_higher_level} / {playerStatus?.wins_higher_level + promotionProgress.missing_requirements.matches_won_higher_level}
+                  {playerStatus?.wins_higher_level || 0} / {(playerStatus?.wins_higher_level || 0) + (promotionProgress?.missing_requirements?.matches_won_higher_level || 0)}
                 </div>
               </div>
 
@@ -254,7 +254,7 @@ export default function PromotionProgress() {
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.matches_in_category} / {playerStatus?.matches_in_category + promotionProgress.missing_requirements.min_total_matches}
+                  {playerStatus?.matches_in_category || 0} / {(playerStatus?.matches_in_category || 0) + (promotionProgress?.missing_requirements?.min_total_matches || 0)}
                 </div>
               </div>
 
@@ -278,7 +278,7 @@ export default function PromotionProgress() {
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.win_rate}% / {(playerStatus?.win_rate || 0) + promotionProgress.missing_requirements.min_win_rate}%
+                  {playerStatus?.win_rate || 0}% / {(playerStatus?.win_rate || 0) + (promotionProgress?.missing_requirements?.min_win_rate || 0)}%
                 </div>
               </div>
 
@@ -302,7 +302,7 @@ export default function PromotionProgress() {
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.rating} / {playerStatus?.rating + promotionProgress.missing_requirements.min_rating_promotion}
+                  {playerStatus?.rating || 0} / {(playerStatus?.rating || 0) + (promotionProgress?.missing_requirements?.min_rating_promotion || 0)}
                 </div>
               </div>
             </div>
