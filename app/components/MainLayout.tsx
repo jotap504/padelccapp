@@ -41,8 +41,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       label: 'Partidos',
       icon: '🏓',
       children: [
-        { id: 'my-matches', label: 'Mis Partidos', href: '/matches', icon: '�' },
-        { id: 'create-match', label: 'Crear Partido', href: '/matches?create=true', icon: '➕' }
+        { id: 'my-matches', label: 'Mis Partidos', href: '/matches', icon: '🏓' },
+        { id: 'create-match', label: 'Crear Partido', href: '/matches?create=true', icon: '➕' },
+        { id: 'promotion-progress', label: 'Progreso de Ascenso', href: '/promotion-progress', icon: '📈' }
       ]
     },
     {
@@ -80,7 +81,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         icon: '⚙️',
         adminOnly: true,
         children: [
-          { id: 'points', label: 'Sistema de Puntos', href: '/admin/ranking', icon: '�' },
+          { id: 'points', label: 'Sistema de Puntos', href: '/admin/ranking', icon: '⚙️' },
+          { id: 'promotion', label: 'Configuración de Ascensos', href: '/admin/category-promotion', icon: '📈' },
           { id: 'courts', label: 'Gestión de Canchas', href: '/admin/courts', icon: '🏟️' },
           { id: 'import', label: 'Importar Datos', href: '/admin/import', icon: '📥' }
         ]
