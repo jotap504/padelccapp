@@ -12,6 +12,7 @@ interface User {
   rating: number | null
   club_id: string
   club_slug: string
+  role: string
 }
 
 interface AuthContextType {
@@ -65,13 +66,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Club no encontrado')
       }
 
-      // Buscar usuario por número de socio o UUID
-      const { data: userData, error: userError } = await supabase
+      // Buscar usuario por número de socio PRIMERO
+      let { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('club_id', club.id)
-        .or(`member_number.eq.${identifier},id.eq.${identifier}`)
+        .eq('member_number', identifier)
         .single()
+
+      // Si no se encontró por member_number, intentar por UUID (id)
+      if (!userData && !userError) {
+        const result = await supabase
+          .from('users')
+          .select('*')
+          .eq('club_id', club.id)
+          .eq('id', identifier)
+          .single()
+        
+        userData = result.data
+        userError = result.error
+      }
 
       if (userError || !userData) {
         throw new Error('Usuario no encontrado')
@@ -85,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Contraseña incorrecta')
       }
 
-      // Crear sesión
+      // Crear sesión en localStorage
       const user: User = {
         id: userData.id,
         name: userData.name,
@@ -95,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         rating: userData.rating,
         club_id: club.id,
         club_slug: clubSlug,
+        role: userData.role || 'user',
       }
 
       const session = {
@@ -104,6 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem('padel_session', JSON.stringify(session))
       setUser(user)
+      
+      // Also create Supabase session for API calls
+      await supabase.auth.setSession({
+        access_token: 'custom_token_' + userData.id,
+        refresh_token: 'custom_refresh_' + userData.id,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -111,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     localStorage.removeItem('padel_session')
+    await supabase.auth.signOut()
     setUser(null)
   }
 

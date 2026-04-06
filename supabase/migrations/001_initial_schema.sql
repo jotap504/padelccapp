@@ -293,28 +293,33 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Policies para clubs (solo super_admin puede crear/modificar)
+DROP POLICY IF EXISTS clubs_select ON public.clubs;
 CREATE POLICY clubs_select ON public.clubs
     FOR SELECT USING (true); -- Cualquiera puede ver clubs públicos
 
 -- Policies para users
+DROP POLICY IF EXISTS users_select_own_club ON public.users;
 CREATE POLICY users_select_own_club ON public.users
     FOR SELECT USING (
         club_id = public.get_current_club_id() 
         OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS users_insert_own_club ON public.users;
 CREATE POLICY users_insert_own_club ON public.users
     FOR INSERT WITH CHECK (
         club_id = public.get_current_club_id() 
         OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS users_update_own_club ON public.users;
 CREATE POLICY users_update_own_club ON public.users
     FOR UPDATE USING (
         club_id = public.get_current_club_id() 
         OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS users_delete_own_club ON public.users;
 CREATE POLICY users_delete_own_club ON public.users
     FOR DELETE USING (
         club_id = public.get_current_club_id() 
@@ -322,24 +327,28 @@ CREATE POLICY users_delete_own_club ON public.users
     );
 
 -- Policies para matches
+DROP POLICY IF EXISTS matches_select_own_club ON public.matches;
 CREATE POLICY matches_select_own_club ON public.matches
     FOR SELECT USING (
         club_id = public.get_current_club_id() 
         OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS matches_insert_own_club ON public.matches;
 CREATE POLICY matches_insert_own_club ON public.matches
     FOR INSERT WITH CHECK (
         club_id = public.get_current_club_id() 
         OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS matches_update_own_club ON public.matches;
 CREATE POLICY matches_update_own_club ON public.matches
     FOR UPDATE USING (
         club_id = public.get_current_club_id() 
         OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS matches_delete_own_club ON public.matches;
 CREATE POLICY matches_delete_own_club ON public.matches
     FOR DELETE USING (
         club_id = public.get_current_club_id() 
@@ -347,6 +356,7 @@ CREATE POLICY matches_delete_own_club ON public.matches
     );
 
 -- Policies para ranking_history
+DROP POLICY IF EXISTS ranking_history_select_own_club ON public.ranking_history;
 CREATE POLICY ranking_history_select_own_club ON public.ranking_history
     FOR SELECT USING (
         club_id = public.get_current_club_id() 
@@ -354,6 +364,7 @@ CREATE POLICY ranking_history_select_own_club ON public.ranking_history
     );
 
 -- Policies para availability
+DROP POLICY IF EXISTS availability_select_own ON public.availability;
 CREATE POLICY availability_select_own ON public.availability
     FOR SELECT USING (
         EXISTS (
@@ -363,6 +374,7 @@ CREATE POLICY availability_select_own ON public.availability
         ) OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS availability_insert_own ON public.availability;
 CREATE POLICY availability_insert_own ON public.availability
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -373,6 +385,7 @@ CREATE POLICY availability_insert_own ON public.availability
     );
 
 -- Policies para player_imports
+DROP POLICY IF EXISTS player_imports_select_own_club ON public.player_imports;
 CREATE POLICY player_imports_select_own_club ON public.player_imports
     FOR SELECT USING (
         club_id = public.get_current_club_id() 
@@ -380,12 +393,14 @@ CREATE POLICY player_imports_select_own_club ON public.player_imports
     );
 
 -- Policies para intercountry tables
+DROP POLICY IF EXISTS intercountry_tournaments_select ON public.intercountry_tournaments;
 CREATE POLICY intercountry_tournaments_select ON public.intercountry_tournaments
     FOR SELECT USING (
         club_id = public.get_current_club_id() 
         OR public.get_current_club_id() IS NULL
     );
 
+DROP POLICY IF EXISTS intercountry_teams_select ON public.intercountry_teams;
 CREATE POLICY intercountry_teams_select ON public.intercountry_teams
     FOR SELECT USING (
         EXISTS (
@@ -396,6 +411,7 @@ CREATE POLICY intercountry_teams_select ON public.intercountry_teams
     );
 
 -- Policies para notifications
+DROP POLICY IF EXISTS notifications_select_own ON public.notifications;
 CREATE POLICY notifications_select_own ON public.notifications
     FOR SELECT USING (
         user_id = auth.uid() 
@@ -420,22 +436,27 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers para updated_at
+DROP TRIGGER IF EXISTS update_clubs_updated_at ON public.clubs;
 CREATE TRIGGER update_clubs_updated_at
     BEFORE UPDATE ON public.clubs
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_users_updated_at ON public.users;
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON public.users
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_matches_updated_at ON public.matches;
 CREATE TRIGGER update_matches_updated_at
     BEFORE UPDATE ON public.matches
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_availability_updated_at ON public.availability;
 CREATE TRIGGER update_availability_updated_at
     BEFORE UPDATE ON public.availability
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_intercountry_tournaments_updated_at ON public.intercountry_tournaments;
 CREATE TRIGGER update_intercountry_tournaments_updated_at
     BEFORE UPDATE ON public.intercountry_tournaments
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -513,29 +534,36 @@ $$ LANGUAGE plpgsql;
 -- Trigger para actualizar estadísticas del usuario después de un partido confirmado
 CREATE OR REPLACE FUNCTION public.update_user_stats_after_match()
 RETURNS TRIGGER AS $$
+DECLARE
+    player_record RECORD;
+    player_id UUID;
 BEGIN
     -- Solo procesar si el partido fue confirmado
     IF NEW.status = 'confirmed' AND (OLD.status IS NULL OR OLD.status != 'confirmed') THEN
         -- Actualizar total_matches y win_rate para todos los jugadores del partido
         
         -- Jugadores de team_a
-        FOR player IN SELECT * FROM jsonb_to_recordset(NEW.team_a) AS x(user_id UUID)
+        FOR player_record IN 
+            SELECT (elem->>'user_id')::UUID as uid 
+            FROM jsonb_array_elements(NEW.team_a) AS elem
         LOOP
             UPDATE public.users 
             SET total_matches = total_matches + 1,
-                win_rate = public.calculate_win_rate(player.user_id),
+                win_rate = public.calculate_win_rate(player_record.uid),
                 ranking_confidence = ranking_confidence + 1
-            WHERE id = player.user_id;
+            WHERE id = player_record.uid;
         END LOOP;
         
         -- Jugadores de team_b
-        FOR player IN SELECT * FROM jsonb_to_recordset(NEW.team_b) AS x(user_id UUID)
+        FOR player_record IN 
+            SELECT (elem->>'user_id')::UUID as uid 
+            FROM jsonb_array_elements(NEW.team_b) AS elem
         LOOP
             UPDATE public.users 
             SET total_matches = total_matches + 1,
-                win_rate = public.calculate_win_rate(player.user_id),
+                win_rate = public.calculate_win_rate(player_record.uid),
                 ranking_confidence = ranking_confidence + 1
-            WHERE id = player.user_id;
+            WHERE id = player_record.uid;
         END LOOP;
     END IF;
     
@@ -543,6 +571,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_user_stats_on_match_confirmation ON public.matches;
 CREATE TRIGGER update_user_stats_on_match_confirmation
     AFTER UPDATE ON public.matches
     FOR EACH ROW EXECUTE FUNCTION public.update_user_stats_after_match();

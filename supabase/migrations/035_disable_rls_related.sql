@@ -1,0 +1,3 @@
+-- Temporarily disable RLS for related tables
+ALTER TABLE clubs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;

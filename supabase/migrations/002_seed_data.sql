@@ -30,7 +30,8 @@ BEGIN
         password_hash,
         status,
         imported_from_csv,
-        auth_provider
+        auth_provider,
+        role
     ) VALUES (
         v_club_id,
         'Administrador Demo',
@@ -40,10 +41,11 @@ BEGIN
         5,
         850,
         5,
-        crypt('100', gen_salt('bf')),
+        '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mqr6lO8qLw4hJhQzB1Qc3F7mjKZ1Z6K', -- bcrypt hash de '100'
         'active',
         false,
-        'email'
+        'email',
+        'admin'
     )
     ON CONFLICT (club_id, member_number) DO NOTHING;
     
@@ -61,12 +63,12 @@ BEGIN
         imported_from_csv,
         auth_provider
     ) VALUES 
-        (v_club_id, 'Juan Pérez', 'M', '10001', 5, 850, 5, crypt('100', gen_salt('bf')), 'active', true, 'imported'),
-        (v_club_id, 'María García', 'F', '10002', 6, 750, 6, crypt('100', gen_salt('bf')), 'active', true, 'imported'),
-        (v_club_id, 'Carlos López', 'M', '10003', 4, 950, 4, crypt('100', gen_salt('bf')), 'active', true, 'imported'),
-        (v_club_id, 'Ana Martínez', 'F', '10004', 5, 850, 5, crypt('100', gen_salt('bf')), 'active', true, 'imported'),
-        (v_club_id, 'Pedro Rodríguez', 'M', '10005', 6, 750, 6, crypt('100', gen_salt('bf')), 'active', true, 'imported'),
-        (v_club_id, 'Laura Sánchez', 'F', '10006', 7, 650, 7, crypt('100', gen_salt('bf')), 'active', true, 'imported')
+        (v_club_id, 'Juan Pérez', 'M', '10001', 5, 850, 5, '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mqr6lO8qLw4hJhQzB1Qc3F7mjKZ1Z6K', 'active', true, 'imported'), -- bcrypt hash de '100'
+        (v_club_id, 'María García', 'F', '10002', 6, 750, 6, '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mqr6lO8qLw4hJhQzB1Qc3F7mjKZ1Z6K', 'active', true, 'imported'), -- bcrypt hash de '100'
+        (v_club_id, 'Carlos López', 'M', '10003', 4, 950, 4, '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mqr6lO8qLw4hJhQzB1Qc3F7mjKZ1Z6K', 'active', true, 'imported'), -- bcrypt hash de '100'
+        (v_club_id, 'Ana Martínez', 'F', '10004', 5, 850, 5, '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mqr6lO8qLw4hJhQzB1Qc3F7mjKZ1Z6K', 'active', true, 'imported'), -- bcrypt hash de '100'
+        (v_club_id, 'Pedro Rodríguez', 'M', '10005', 6, 750, 6, '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mqr6lO8qLw4hJhQzB1Qc3F7mjKZ1Z6K', 'active', true, 'imported'), -- bcrypt hash de '100'
+        (v_club_id, 'Laura Sánchez', 'F', '10006', 7, 650, 7, '$2a$10$N9qo8uLOickgx2ZMRZoMy.Mqr6lO8qLw4hJhQzB1Qc3F7mjKZ1Z6K', 'active', true, 'imported') -- bcrypt hash de '100'
     ON CONFLICT (club_id, member_number) DO NOTHING;
     
     RAISE NOTICE 'Setup completado. Club ID: %', v_club_id;
