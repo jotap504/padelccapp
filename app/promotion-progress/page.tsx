@@ -5,26 +5,6 @@ import { useAuth } from '@/lib/auth/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import MainLayout from '@/app/components/MainLayout'
 
-interface PromotionProgress {
-  eligible: boolean
-  from_category: number
-  to_category: number
-  requirements_met: {
-    matches_won_same_level: boolean
-    matches_won_higher_level: boolean
-    min_total_matches: boolean
-    min_win_rate: boolean
-    min_rating_promotion: boolean
-  }
-  missing_requirements: {
-    matches_won_same_level: number
-    matches_won_higher_level: number
-    min_total_matches: number
-    min_win_rate: number
-    min_rating_promotion: number
-  }
-}
-
 interface PlayerStatus {
   current_category: number
   matches_in_category: number
@@ -47,29 +27,41 @@ const categories = [
   { number: 1, name: '1ra', color: 'from-yellow-500 to-yellow-600' }
 ]
 
+const defaultRequirements = {
+  8: { matches_won_same_level: 25, matches_won_higher_level: 8, min_total_matches: 35, min_win_rate: 60, min_rating: 600 },
+  7: { matches_won_same_level: 25, matches_won_higher_level: 8, min_total_matches: 35, min_win_rate: 62, min_rating: 700 },
+  6: { matches_won_same_level: 28, matches_won_higher_level: 10, min_total_matches: 40, min_win_rate: 65, min_rating: 800 },
+  5: { matches_won_same_level: 28, matches_won_higher_level: 10, min_total_matches: 40, min_win_rate: 65, min_rating: 900 },
+  4: { matches_won_same_level: 30, matches_won_higher_level: 12, min_total_matches: 45, min_win_rate: 68, min_rating: 1050 },
+  3: { matches_won_same_level: 30, matches_won_higher_level: 12, min_total_matches: 45, min_win_rate: 70, min_rating: 1200 },
+  2: { matches_won_same_level: 35, matches_won_higher_level: 15, min_total_matches: 50, min_win_rate: 75, min_rating: 1350 }
+}
+
 export default function PromotionProgress() {
   const { user, isAuthenticated, isLoading } = useAuth()
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null)
-  const [promotionProgress, setPromotionProgress] = useState<PromotionProgress | null>(null)
   const [loading, setLoading] = useState(true)
+  const [migrationNeeded, setMigrationNeeded] = useState(true)
 
   useEffect(() => {
     if (isLoading || !isAuthenticated || !user) return
-    loadPromotionProgress()
+    loadPlayerStatus()
   }, [isLoading, isAuthenticated, user])
 
-  async function loadPromotionProgress() {
+  async function loadPlayerStatus() {
     if (!user) return
 
     try {
-      // Get player's current status
-      const { data: statusData } = await supabase
+      const { data: statusData, error: statusError } = await supabase
         .from('player_category_status')
         .select('*')
         .eq('player_id', user.id)
         .single()
 
-      // Get user data for rating and stats
+      if (statusError && statusError.code !== 'PGRST116') {
+        console.error('Error loading player status:', statusError)
+      }
+
       const { data: userData } = await supabase
         .from('users')
         .select('rating, total_matches, win_rate')
@@ -79,29 +71,20 @@ export default function PromotionProgress() {
       if (userData) {
         const status: PlayerStatus = {
           current_category: statusData?.current_category || 8,
-          matches_in_category: statusData?.matches_in_category || 0,
-          wins_same_level: statusData?.wins_same_level || 0,
-          wins_higher_level: statusData?.wins_higher_level || 0,
-          total_wins: statusData?.total_wins || 0,
+          matches_in_category: statusData?.matches_in_category || userData.total_matches || 0,
+          wins_same_level: statusData?.wins_same_level || Math.floor((userData.total_matches || 0) * (userData.win_rate || 0) / 100 * 0.7),
+          wins_higher_level: statusData?.wins_higher_level || Math.floor((userData.total_matches || 0) * (userData.win_rate || 0) / 100 * 0.3),
+          total_wins: Math.floor((userData.total_matches || 0) * (userData.win_rate || 0) / 100),
           rating: userData.rating || 1500,
           total_matches: userData.total_matches || 0,
           win_rate: userData.win_rate || 0
         }
         setPlayerStatus(status)
-
-        // Check promotion eligibility
-        const { data: progressData } = await supabase
-          .rpc('check_promotion_eligibility', {
-            p_player_id: user.id,
-            p_club_id: user.club_id
-          })
-
-        if (progressData && progressData.length > 0) {
-          setPromotionProgress(progressData[0])
-        }
+        setMigrationNeeded(!statusData)
       }
     } catch (error) {
       console.error('Error loading promotion progress:', error)
+      setMigrationNeeded(true)
     } finally {
       setLoading(false)
     }
@@ -119,17 +102,61 @@ export default function PromotionProgress() {
 
   const currentCategory = categories.find(cat => cat.number === playerStatus?.current_category)
   const nextCategory = categories.find(cat => cat.number === (playerStatus?.current_category || 8) - 1)
+  const requirements = playerStatus ? defaultRequirements[playerStatus.current_category as keyof typeof defaultRequirements] : null
+
+  const progress = requirements ? {
+    matches_won_same_level: {
+      current: playerStatus?.wins_same_level || 0,
+      required: requirements.matches_won_same_level,
+      completed: (playerStatus?.wins_same_level || 0) >= requirements.matches_won_same_level
+    },
+    matches_won_higher_level: {
+      current: playerStatus?.wins_higher_level || 0,
+      required: requirements.matches_won_higher_level,
+      completed: (playerStatus?.wins_higher_level || 0) >= requirements.matches_won_higher_level
+    },
+    min_total_matches: {
+      current: playerStatus?.matches_in_category || 0,
+      required: requirements.min_total_matches,
+      completed: (playerStatus?.matches_in_category || 0) >= requirements.min_total_matches
+    },
+    min_win_rate: {
+      current: playerStatus?.win_rate || 0,
+      required: requirements.min_win_rate,
+      completed: (playerStatus?.win_rate || 0) >= requirements.min_win_rate
+    },
+    min_rating: {
+      current: playerStatus?.rating || 0,
+      required: requirements.min_rating,
+      completed: (playerStatus?.rating || 0) >= requirements.min_rating
+    }
+  } : null
+
+  const allRequirementsMet = progress ? Object.values(progress).every(p => p.completed) : false
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 p-8 shadow-2xl">
           <h1 className="text-3xl font-bold text-white mb-2">📈 Progreso de Ascenso</h1>
           <p className="text-indigo-100">Tu camino hacia la siguiente categoría</p>
         </div>
 
-        {/* Current Status */}
+        {migrationNeeded && (
+          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-6">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">⚠️</div>
+              <div>
+                <div className="font-bold text-yellow-400">Configuración de Ascensos Pendiente</div>
+                <div className="text-sm text-yellow-300">
+                  El administrador necesita ejecutar la migración de la base de datos para activar el sistema completo de ascensos.
+                  Mientras tanto, mostramos información básica con requisitos predeterminados.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {playerStatus && (
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
@@ -156,7 +183,6 @@ export default function PromotionProgress() {
               )}
             </div>
 
-            {/* Progress Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-700/50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-blue-400">{playerStatus.matches_in_category}</div>
@@ -178,137 +204,130 @@ export default function PromotionProgress() {
           </div>
         )}
 
-        {/* Promotion Requirements */}
-        {promotionProgress && (
+        {progress && (
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-6">
-              {promotionProgress.eligible ? '🎉 ¡Elegible para Ascenso!' : '📋 Requisitos para Ascender'}
+              {allRequirementsMet ? '🎉 ¡Elegible para Ascenso!' : '📋 Requisitos para Ascender'}
             </h2>
 
             <div className="space-y-4">
-              {/* Victorias mismo nivel */}
               <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    promotionProgress.requirements_met.matches_won_same_level 
+                    progress.matches_won_same_level.completed 
                       ? 'bg-green-500 text-white' 
                       : 'bg-gray-600 text-gray-400'
                   }`}>
-                    {promotionProgress.requirements_met.matches_won_same_level ? '✓' : '○'}
+                    {progress.matches_won_same_level.completed ? '✓' : '○'}
                   </div>
                   <div>
                     <div className="font-medium text-white">Victorias vs mismo nivel</div>
                     <div className="text-sm text-gray-400">
-                      Necesitas {promotionProgress.missing_requirements.matches_won_same_level > 0 
-                        ? `${promotionProgress.missing_requirements.matches_won_same_level} más` 
+                      {progress.matches_won_same_level.required - progress.matches_won_same_level.current > 0 
+                        ? `Necesitas ${progress.matches_won_same_level.required - progress.matches_won_same_level.current} más` 
                         : 'Completado'}
                     </div>
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.wins_same_level || 0} / {(playerStatus?.wins_same_level || 0) + (promotionProgress?.missing_requirements?.matches_won_same_level || 0)}
+                  {progress.matches_won_same_level.current} / {progress.matches_won_same_level.required}
                 </div>
               </div>
 
-              {/* Victorias nivel superior */}
               <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    promotionProgress.requirements_met.matches_won_higher_level 
+                    progress.matches_won_higher_level.completed 
                       ? 'bg-green-500 text-white' 
                       : 'bg-gray-600 text-gray-400'
                   }`}>
-                    {promotionProgress.requirements_met.matches_won_higher_level ? '✓' : '○'}
+                    {progress.matches_won_higher_level.completed ? '✓' : '○'}
                   </div>
                   <div>
                     <div className="font-medium text-white">Victorias vs nivel superior</div>
                     <div className="text-sm text-gray-400">
-                      {promotionProgress.missing_requirements.matches_won_higher_level > 0 
-                        ? `Necesitas ${promotionProgress.missing_requirements.matches_won_higher_level} más` 
+                      {progress.matches_won_higher_level.required - progress.matches_won_higher_level.current > 0 
+                        ? `Necesitas ${progress.matches_won_higher_level.required - progress.matches_won_higher_level.current} más` 
                         : 'Completado'}
                     </div>
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.wins_higher_level || 0} / {(playerStatus?.wins_higher_level || 0) + (promotionProgress?.missing_requirements?.matches_won_higher_level || 0)}
+                  {progress.matches_won_higher_level.current} / {progress.matches_won_higher_level.required}
                 </div>
               </div>
 
-              {/* Total partidos */}
               <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    promotionProgress.requirements_met.min_total_matches 
+                    progress.min_total_matches.completed 
                       ? 'bg-green-500 text-white' 
                       : 'bg-gray-600 text-gray-400'
                   }`}>
-                    {promotionProgress.requirements_met.min_total_matches ? '✓' : '○'}
+                    {progress.min_total_matches.completed ? '✓' : '○'}
                   </div>
                   <div>
                     <div className="font-medium text-white">Total de partidos</div>
                     <div className="text-sm text-gray-400">
-                      {promotionProgress.missing_requirements.min_total_matches > 0 
-                        ? `Necesitas ${promotionProgress.missing_requirements.min_total_matches} más` 
+                      {progress.min_total_matches.required - progress.min_total_matches.current > 0 
+                        ? `Necesitas ${progress.min_total_matches.required - progress.min_total_matches.current} más` 
                         : 'Completado'}
                     </div>
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.matches_in_category || 0} / {(playerStatus?.matches_in_category || 0) + (promotionProgress?.missing_requirements?.min_total_matches || 0)}
+                  {progress.min_total_matches.current} / {progress.min_total_matches.required}
                 </div>
               </div>
 
-              {/* Win rate */}
               <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    promotionProgress.requirements_met.min_win_rate 
+                    progress.min_win_rate.completed 
                       ? 'bg-green-500 text-white' 
                       : 'bg-gray-600 text-gray-400'
                   }`}>
-                    {promotionProgress.requirements_met.min_win_rate ? '✓' : '○'}
+                    {progress.min_win_rate.completed ? '✓' : '○'}
                   </div>
                   <div>
                     <div className="font-medium text-white">Porcentaje de victorias</div>
                     <div className="text-sm text-gray-400">
-                      {promotionProgress.missing_requirements.min_win_rate > 0 
-                        ? `Necesitas ${promotionProgress.missing_requirements.min_win_rate.toFixed(1)}% más` 
+                      {progress.min_win_rate.required - progress.min_win_rate.current > 0 
+                        ? `Necesitas ${(progress.min_win_rate.required - progress.min_win_rate.current).toFixed(1)}% más` 
                         : 'Completado'}
                     </div>
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.win_rate || 0}% / {(playerStatus?.win_rate || 0) + (promotionProgress?.missing_requirements?.min_win_rate || 0)}%
+                  {progress.min_win_rate.current}% / {progress.min_win_rate.required}%
                 </div>
               </div>
 
-              {/* Rating mínimo */}
               <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    promotionProgress.requirements_met.min_rating_promotion 
+                    progress.min_rating.completed 
                       ? 'bg-green-500 text-white' 
                       : 'bg-gray-600 text-gray-400'
                   }`}>
-                    {promotionProgress.requirements_met.min_rating_promotion ? '✓' : '○'}
+                    {progress.min_rating.completed ? '✓' : '○'}
                   </div>
                   <div>
                     <div className="font-medium text-white">Rating mínimo</div>
                     <div className="text-sm text-gray-400">
-                      {promotionProgress.missing_requirements.min_rating_promotion > 0 
-                        ? `Necesitas ${promotionProgress.missing_requirements.min_rating_promotion} puntos más` 
+                      {progress.min_rating.required - progress.min_rating.current > 0 
+                        ? `Necesitas ${progress.min_rating.required - progress.min_rating.current} puntos más` 
                         : 'Completado'}
                     </div>
                   </div>
                 </div>
                 <div className="text-lg font-bold text-gray-300">
-                  {playerStatus?.rating || 0} / {(playerStatus?.rating || 0) + (promotionProgress?.missing_requirements?.min_rating_promotion || 0)}
+                  {progress.min_rating.current} / {progress.min_rating.required}
                 </div>
               </div>
             </div>
 
-            {/* Eligibility Message */}
-            {promotionProgress.eligible && (
+            {allRequirementsMet && (
               <div className="mt-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="text-2xl">🎉</div>
@@ -324,7 +343,6 @@ export default function PromotionProgress() {
           </div>
         )}
 
-        {/* Tips */}
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
           <h3 className="text-lg font-bold text-blue-400 mb-3">💡 Consejos para ascender más rápido</h3>
           <ul className="space-y-2 text-gray-300">
