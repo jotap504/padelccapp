@@ -56,7 +56,7 @@ export default function RankingsPage() {
       setLoading(true)
       let query = supabase
         .from('users')
-        .select('id, name, category, rating, total_matches, win_rate')
+        .select('id, name, category, rating, total_matches, win_rate, gender')
         .or('role.eq.user,role.is.null')
         .not('rating', 'is', null)
         .order('rating', { ascending: false })
