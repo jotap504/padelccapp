@@ -160,13 +160,12 @@ export default function CategoryPromotionPage() {
       return
     }
     
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search)
-      const clubIdFromUrl = urlParams.get('club_id')
-      if (clubIdFromUrl) {
-        setClubId(clubIdFromUrl)
-        loadConfigs(clubIdFromUrl)
-      }
+    // Auto-detectar el club del usuario admin
+    if (user?.club_id) {
+      setClubId(user.club_id)
+      loadConfigs(user.club_id)
+    } else {
+      setMessage('Error: No se pudo detectar el club del administrador')
     }
   }, [mounted, isLoading, isAuthenticated, user, router])
 
@@ -247,13 +246,6 @@ export default function CategoryPromotionPage() {
     }
   }
 
-  function handleClubIdChange(newClubId: string) {
-    setClubId(newClubId)
-    if (newClubId) {
-      loadConfigs(newClubId)
-    }
-  }
-
   function handleConfigChange(category: number, field: keyof CategoryConfig, value: number) {
     const newConfigs = configs.filter(c => c.from_category !== category)
     const existingConfig = configs.find(c => c.from_category === category) || defaultConfigs[category]
@@ -280,16 +272,18 @@ export default function CategoryPromotionPage() {
           <p className="text-purple-100">Sistema de puntos por categoría con decaimiento temporal</p>
         </div>
 
-        {/* Club Selection */}
+        {/* Club Information */}
         <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-          <label className="block text-sm font-medium text-gray-300 mb-2">Seleccionar Club</label>
-          <input
-            type="text"
-            value={clubId}
-            onChange={(e) => handleClubIdChange(e.target.value)}
-            placeholder="ID del Club"
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-1">Club Detectado</h3>
+              <p className="text-gray-300">Configurando ascensos para tu club</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-400">ID del Club:</p>
+              <p className="text-sm font-mono text-blue-400">{clubId}</p>
+            </div>
+          </div>
         </div>
 
         {/* Message */}
