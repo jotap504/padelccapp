@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client'
 import MainLayout from '@/app/components/MainLayout'
 
 interface CategoryConfig {
+  id?: string
   from_category: number
   matches_won_same_level: number
   matches_won_higher_level: number
@@ -101,7 +102,7 @@ export default function CategoryPromotionPage() {
     try {
       const existing = configs.find(c => c.from_category === category)
       
-      if (existing) {
+      if (existing && existing.id) {
         const { error } = await supabase
           .from('category_promotion_requirements')
           .update(config)
