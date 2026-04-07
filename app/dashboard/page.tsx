@@ -16,6 +16,17 @@ interface DashboardStats {
   pendingValidations: number
 }
 
+interface CategoryPodium {
+  category: number
+  categoryName: string
+  topPlayers: Array<{
+    id: string
+    name: string
+    rating: number | null
+    position: number
+  }>
+}
+
 interface Match {
   id: string
   date: string
@@ -46,6 +57,7 @@ export default function DashboardPage() {
     pendingValidations: 0
   })
   const [recentMatches, setRecentMatches] = useState<Match[]>([])
+  const [categoryPodiums, setCategoryPodiums] = useState<CategoryPodium[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -56,6 +68,49 @@ export default function DashboardPage() {
     }
     loadDashboardData()
   }, [isLoading, isAuthenticated, user, router])
+
+  async function loadCategoryPodiums() {
+    try {
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('id, name, category, rating')
+        .or('role.eq.user,role.is.null')
+        .not('rating', 'is', null)
+        .not('category', 'is', null)
+        .order('rating', { ascending: false })
+
+      if (error) {
+        console.error('Error loading podiums:', error)
+        return
+      }
+
+      // Agrupar por categoría y tomar top 3
+      const categoryNames = ['1ra', '2da', '3ra', '4ta', '5ta', '6ta', '7ma', '8va']
+      const podiums: CategoryPodium[] = []
+
+      for (let category = 1; category <= 8; category++) {
+        const categoryUsers = users
+          .filter(u => u.category === category)
+          .slice(0, 3)
+          .map((user, index) => ({
+            ...user,
+            position: index + 1
+          }))
+
+        if (categoryUsers.length > 0) {
+          podiums.push({
+            category,
+            categoryName: `${categoryNames[category - 1]} Categoría`,
+            topPlayers: categoryUsers
+          })
+        }
+      }
+
+      setCategoryPodiums(podiums)
+    } catch (error) {
+      console.error('Error loading podiums:', error)
+    }
+  }
 
   async function loadDashboardData() {
     if (!user) return
@@ -101,10 +156,22 @@ export default function DashboardPage() {
         
         setRecentMatches(matchesData.slice(0, 5))
       }
+
+      // Cargar podios por categoría
+      await loadCategoryPodiums()
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  function getMedalEmoji(position: number) {
+    switch(position) {
+      case 1: return '??'
+      case 2: return '??'
+      case 3: return '??'
+      default: return ''
     }
   }
 
