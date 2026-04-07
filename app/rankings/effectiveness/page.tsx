@@ -260,7 +260,7 @@ export default function EffectivenessRankingPage() {
             <div className="text-3xl font-bold text-red-400">
               {filteredRankings.filter(r => r.effectiveness_rate < 50).length}
             </div>
-            <div className="text-sm text-gray-400 mt-1">Jugadores en Desarrollo (<50%)</div>
+            <div className="text-sm text-gray-400 mt-1">Jugadores en Desarrollo (&lt;50%)</div>
           </div>
         </div>
       </div>
