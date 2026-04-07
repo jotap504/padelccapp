@@ -1,15 +1,19 @@
 # PádelCC - Sistema de Gestión de Pádel
 
-Sistema multi-tenant de ranking y gestión de partidos para clubes de pádel, con soporte para 8 categorías, importación CSV, y sistema de validación semi-manual.
+[![Vercel](https://vercel.com/button)](https://padelccapp.vercel.app)
 
-## 🚀 Características Principales
+Aplicación web completa para la gestión de pádel, con sistema de ranking ELO, autenticación de usuarios, y gestión de partidos.
 
-- **🏛️ Multi-tenant**: Soporte para múltiples clubes con aislamiento completo de datos
-- **📊 Ranking ELO**: Sistema de 8 categorías (1ra-8va) con varianza leve y cálculo por equipo
-- **🔐 Autenticación dual**: Login con UUID del sistema o número de socio
-- **📥 Importación CSV**: Carga masiva de jugadores desde archivo CSV
-- **🎾 Drive/Revés**: Registro de posición preferida y lado jugado por partido
-- **✅ Validación ágil**: Semi-manual (1 confirmación por equipo = 2 total)
+## 🚀 **Características Principales**
+
+- � **Sistema de Ranking ELO** con 8 categorías configurables
+- 📊 **Panel de Administración** completo para gestión del club
+- � **Gestión de Torneos** con brackets automáticos
+- 🎾 **Control de Partidos** individual y por equipos
+- 📈 **Sistema de Ascensos** realista y configurable
+- 🔐 **Autenticación Segura** con múltiples métodos
+- 📱 **Interfaz Responsive** para todos los dispositivos
+- 🎨 **Diseño Moderno** con tema dark y gradientes
 - **📱 Notificaciones**: Soporte para WhatsApp, Push y Email
 - **🏆 Intercountry**: Gestión de torneos entre clubes (6-8 equipos, round-robin)
 
