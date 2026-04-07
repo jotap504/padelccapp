@@ -372,7 +372,7 @@ export default function MatchesContent() {
                       </p>
                       
                       {/* Mostrar resultados si existen */}
-                      {match.sets && Array.isArray(match.sets) && match.sets.length > 0 && (
+                      {match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0) ? (
                         <div className="mt-2">
                           <p className="text-gray-400 text-xs mb-1">Resultado:</p>
                           <div className="flex gap-2">
@@ -382,6 +382,20 @@ export default function MatchesContent() {
                               </span>
                             ))}
                           </div>
+                        </div>
+                      ) : match.status === 'completed' ? (
+                        <div className="mt-2">
+                          <p className="text-gray-400 text-xs mb-1">Resultado:</p>
+                          <span className="px-2 py-1 bg-yellow-600 rounded text-xs text-white">
+                            Sin registrar
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mt-2">
+                          <p className="text-gray-400 text-xs mb-1">Resultado:</p>
+                          <span className="px-2 py-1 bg-gray-600 rounded text-xs text-white">
+                            Por jugar
+                          </span>
                         </div>
                       )}
                       
@@ -402,6 +416,14 @@ export default function MatchesContent() {
                           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                         >
                           Validar
+                        </button>
+                      )}
+                      {match.status === 'completed' && (!match.sets || !Array.isArray(match.sets) || match.sets.length === 0 || !match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)) && (
+                        <button
+                          onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                          className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                        >
+                          Registrar Resultado
                         </button>
                       )}
                       <button
