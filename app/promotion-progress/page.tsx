@@ -5,364 +5,338 @@ import { useAuth } from '@/lib/auth/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import MainLayout from '@/app/components/MainLayout'
 
-interface PlayerStatus {
+interface PlayerProgress {
   current_category: number
-  matches_in_category: number
-  wins_same_level: number
-  wins_higher_level: number
-  total_wins: number
-  rating: number
+  current_points: number
   total_matches: number
-  win_rate: number
+  total_wins: number
+  effectiveness_rate: number
+  last_match_date: string
+  points_needed: number
+  requirements_met: {
+    points: boolean
+    matches_won_same_level: boolean
+    min_total_matches: boolean
+    min_win_rate: boolean
+  }
+  missing_requirements: {
+    points: number
+    matches_won_same_level: number
+    min_total_matches: number
+    min_win_rate: number
+  }
+}
+
+interface CategoryConfig {
+  category_points_max: number
+  points_per_win: number
+  points_per_loss: number
+  bonus_superior_category: number
+  points_decay_months: number
+  matches_won_same_level: number
+  matches_won_higher_level: number
+  min_total_matches: number
+  min_win_rate: number
 }
 
 const categories = [
-  { number: 8, name: '8va', color: 'from-gray-600 to-gray-700' },
-  { number: 7, name: '7ma', color: 'from-purple-600 to-purple-700' },
-  { number: 6, name: '6ta', color: 'from-blue-600 to-blue-700' },
-  { number: 5, name: '5ta', color: 'from-green-600 to-green-700' },
-  { number: 4, name: '4ta', color: 'from-yellow-600 to-yellow-700' },
-  { number: 3, name: '3ra', color: 'from-orange-600 to-orange-700' },
-  { number: 2, name: '2da', color: 'from-red-600 to-red-700' },
-  { number: 1, name: '1ra', color: 'from-yellow-500 to-yellow-600' }
+  { number: 1, name: '1ra' },
+  { number: 2, name: '2da' },
+  { number: 3, name: '3ra' },
+  { number: 4, name: '4ta' },
+  { number: 5, name: '5ta' },
+  { number: 6, name: '6ta' },
+  { number: 7, name: '7ma' },
+  { number: 8, name: '8va' }
 ]
 
-const defaultRequirements = {
-  8: { matches_won_same_level: 25, matches_won_higher_level: 8, min_total_matches: 35, min_win_rate: 60, min_rating: 600 },
-  7: { matches_won_same_level: 25, matches_won_higher_level: 8, min_total_matches: 35, min_win_rate: 62, min_rating: 700 },
-  6: { matches_won_same_level: 28, matches_won_higher_level: 10, min_total_matches: 40, min_win_rate: 65, min_rating: 800 },
-  5: { matches_won_same_level: 28, matches_won_higher_level: 10, min_total_matches: 40, min_win_rate: 65, min_rating: 900 },
-  4: { matches_won_same_level: 30, matches_won_higher_level: 12, min_total_matches: 45, min_win_rate: 68, min_rating: 1050 },
-  3: { matches_won_same_level: 30, matches_won_higher_level: 12, min_total_matches: 45, min_win_rate: 70, min_rating: 1200 },
-  2: { matches_won_same_level: 35, matches_won_higher_level: 15, min_total_matches: 50, min_win_rate: 75, min_rating: 1350 }
-}
-
-export default function PromotionProgress() {
+export default function PromotionProgressPage() {
   const { user, isAuthenticated, isLoading } = useAuth()
-  const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null)
+  const [progress, setProgress] = useState<PlayerProgress | null>(null)
+  const [config, setConfig] = useState<CategoryConfig | null>(null)
   const [loading, setLoading] = useState(true)
-  const [migrationNeeded, setMigrationNeeded] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) return
-    loadPlayerStatus()
-  }, [isLoading, isAuthenticated, user])
+    if (isLoading) return
+    if (!isAuthenticated) return
+    loadProgress()
+  }, [isLoading, isAuthenticated])
 
-  async function loadPlayerStatus() {
-    if (!user) return
-
+  async function loadProgress() {
     try {
-      const { data: statusData, error: statusError } = await supabase
-        .from('player_category_status')
+      // Obtener puntos actuales del jugador
+      const { data: playerData, error: playerError } = await supabase
+        .from('player_category_points')
         .select('*')
-        .eq('player_id', user.id)
+        .eq('player_id', user?.id)
         .single()
 
-      if (statusError && statusError.code !== 'PGRST116') {
-        console.error('Error loading player status:', statusError)
+      if (playerError && playerError.code !== 'PGRST116') {
+        throw playerError
       }
 
-      const { data: userData } = await supabase
-        .from('users')
-        .select('rating, total_matches, win_rate')
-        .eq('id', user.id)
+      // Obtener configuración de la categoría actual
+      const currentCategory = playerData?.current_category || 8
+      const { data: configData, error: configError } = await supabase
+        .from('category_promotion_requirements')
+        .select('*')
+        .eq('from_category', currentCategory)
         .single()
 
-      if (userData) {
-        const status: PlayerStatus = {
-          current_category: statusData?.current_category || 8,
-          matches_in_category: statusData?.matches_in_category || userData.total_matches || 0,
-          wins_same_level: statusData?.wins_same_level || Math.floor((userData.total_matches || 0) * (userData.win_rate || 0) / 100 * 0.7),
-          wins_higher_level: statusData?.wins_higher_level || Math.floor((userData.total_matches || 0) * (userData.win_rate || 0) / 100 * 0.3),
-          total_wins: Math.floor((userData.total_matches || 0) * (userData.win_rate || 0) / 100),
-          rating: userData.rating || 1500,
-          total_matches: userData.total_matches || 0,
-          win_rate: userData.win_rate || 0
-        }
-        setPlayerStatus(status)
-        setMigrationNeeded(!statusData)
+      if (configError && configError.code !== 'PGRST116') {
+        throw configError
       }
+
+      // Verificar elegibilidad para ascenso
+      const { data: eligibilityData, error: eligibilityError } = await supabase
+        .rpc('check_promotion_eligibility_enhanced', {
+          p_player_id: user?.id,
+          p_club_id: playerData?.club_id || '67a5b532-879c-4ae0-9b79-68f50d2f12e3'
+        })
+
+      if (eligibilityError) {
+        throw eligibilityError
+      }
+
+      const eligibility = eligibilityData[0]
+
+      setProgress({
+        current_category: currentCategory,
+        current_points: playerData?.current_points || 0,
+        total_matches: playerData?.total_matches || 0,
+        total_wins: playerData?.total_wins || 0,
+        effectiveness_rate: playerData?.effectiveness_rate || 0,
+        last_match_date: playerData?.last_match_date || '',
+        points_needed: eligibility.points_needed,
+        requirements_met: eligibility.requirements_met,
+        missing_requirements: eligibility.missing_requirements
+      })
+
+      setConfig(configData)
     } catch (error) {
-      console.error('Error loading promotion progress:', error)
-      setMigrationNeeded(true)
+      console.error('Error loading progress:', error)
+      setError('No se pudieron cargar los datos de progreso')
     } finally {
       setLoading(false)
     }
+  }
+
+  function getCategoryName(category: number) {
+    const cat = categories.find(c => c.number === category)
+    return cat ? cat.name : `${category}ª`
+  }
+
+  function getNextCategoryName(category: number) {
+    if (category <= 1) return 'Máxima'
+    return getCategoryName(category - 1)
+  }
+
+  function getProgressColor(requirement: boolean) {
+    return requirement ? 'text-green-400' : 'text-gray-400'
+  }
+
+  function getProgressBarColor(percentage: number) {
+    if (percentage >= 80) return 'bg-green-500'
+    if (percentage >= 60) return 'bg-blue-500'
+    if (percentage >= 40) return 'bg-yellow-500'
+    return 'bg-red-500'
+  }
+
+  function getCategoryColor(category: number) {
+    if (category <= 2) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+    if (category <= 4) return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    if (category <= 6) return 'bg-green-500/20 text-green-400 border-green-500/30'
+    return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
   }
 
   if (loading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
         </div>
       </MainLayout>
     )
   }
 
-  const currentCategory = categories.find(cat => cat.number === playerStatus?.current_category)
-  const nextCategory = categories.find(cat => cat.number === (playerStatus?.current_category || 8) - 1)
-  const requirements = playerStatus ? defaultRequirements[playerStatus.current_category as keyof typeof defaultRequirements] : null
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="text-center text-gray-400">
+          <p className="text-xl mb-4">{error}</p>
+          <p className="text-sm">Por favor, contacta al administrador del club.</p>
+        </div>
+      </MainLayout>
+    )
+  }
 
-  const progress = requirements ? {
-    matches_won_same_level: {
-      current: playerStatus?.wins_same_level || 0,
-      required: requirements.matches_won_same_level,
-      completed: (playerStatus?.wins_same_level || 0) >= requirements.matches_won_same_level
-    },
-    matches_won_higher_level: {
-      current: playerStatus?.wins_higher_level || 0,
-      required: requirements.matches_won_higher_level,
-      completed: (playerStatus?.wins_higher_level || 0) >= requirements.matches_won_higher_level
-    },
-    min_total_matches: {
-      current: playerStatus?.matches_in_category || 0,
-      required: requirements.min_total_matches,
-      completed: (playerStatus?.matches_in_category || 0) >= requirements.min_total_matches
-    },
-    min_win_rate: {
-      current: playerStatus?.win_rate || 0,
-      required: requirements.min_win_rate,
-      completed: (playerStatus?.win_rate || 0) >= requirements.min_win_rate
-    },
-    min_rating: {
-      current: playerStatus?.rating || 0,
-      required: requirements.min_rating,
-      completed: (playerStatus?.rating || 0) >= requirements.min_rating
-    }
-  } : null
+  if (!progress || !config) {
+    return (
+      <MainLayout>
+        <div className="text-center text-gray-400">
+          No hay datos de progreso disponibles
+        </div>
+      </MainLayout>
+    )
+  }
 
-  const allRequirementsMet = progress ? Object.values(progress).every(p => p.completed) : false
+  const pointsPercentage = (progress.current_points / config.category_points_max) * 100
+  const matchesPercentage = (progress.total_matches / config.min_total_matches) * 100
+  const winRatePercentage = (progress.effectiveness_rate / config.min_win_rate) * 100
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 p-8 shadow-2xl">
-          <h1 className="text-3xl font-bold text-white mb-2">📈 Progreso de Ascenso</h1>
-          <p className="text-indigo-100">Tu camino hacia la siguiente categoría</p>
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 p-8 shadow-2xl">
+          <h1 className="text-3xl font-bold text-white mb-2">Progreso de Ascenso</h1>
+          <p className="text-purple-100">Sistema de puntos por categoría con decaimiento temporal</p>
         </div>
 
-        {migrationNeeded && (
-          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-6">
-            <div className="flex items-center gap-3">
-              <div className="text-2xl">⚠️</div>
-              <div>
-                <div className="font-bold text-yellow-400">Configuración de Ascensos Pendiente</div>
-                <div className="text-sm text-yellow-300">
-                  El administrador necesita ejecutar la migración de la base de datos para activar el sistema completo de ascensos.
-                  Mientras tanto, mostramos información básica con requisitos predeterminados.
-                </div>
+        {/* Current Status */}
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className={`inline-flex items-center px-4 py-2 rounded-full border ${getCategoryColor(progress.current_category)}`}>
+                <span className="text-lg font-bold">{getCategoryName(progress.current_category)}</span>
               </div>
+              <p className="text-sm text-gray-400 mt-2">Categoría Actual</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-purple-400">{progress.current_points}</div>
+              <p className="text-sm text-gray-400 mt-1">Puntos Actuales</p>
+              <p className="text-xs text-gray-500">de {config.category_points_max} para ascender</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-400">{progress.effectiveness_rate.toFixed(1)}%</div>
+              <p className="text-sm text-gray-400 mt-1">Efectividad</p>
+              <p className="text-xs text-gray-500">{progress.total_wins}/{progress.total_matches} victorias</p>
             </div>
           </div>
-        )}
+        </div>
 
-        {playerStatus && (
-          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-white mb-2">Estado Actual</h2>
-                <div className="flex items-center gap-4">
-                  <div className={`px-4 py-2 rounded-lg bg-gradient-to-r ${currentCategory?.color} text-white font-bold`}>
-                    {currentCategory?.name} Categoría
-                  </div>
-                  <div className="text-gray-300">
-                    <div className="text-sm">Rating: <span className="font-bold">{playerStatus.rating}</span></div>
-                    <div className="text-sm">Win Rate: <span className="font-bold">{playerStatus.win_rate}%</span></div>
-                  </div>
-                </div>
+        {/* Progress to Next Category */}
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
+          <h2 className="text-xl font-bold text-white mb-6">
+            Ascenso a {getNextCategoryName(progress.current_category)}
+          </h2>
+          
+          <div className="space-y-6">
+            {/* Points Progress */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-300">Puntos Acumulados</span>
+                <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.points)}`}>
+                  {progress.current_points} / {config.category_points_max}
+                </span>
               </div>
-              
-              {nextCategory && (
-                <div className="text-right">
-                  <div className="text-sm text-gray-400 mb-1">Siguiente categoría</div>
-                  <div className={`px-4 py-2 rounded-lg bg-gradient-to-r ${nextCategory.color} text-white font-bold`}>
-                    {nextCategory.name}
-                  </div>
-                </div>
-              )}
+              <div className="w-full bg-gray-700 rounded-full h-3">
+                <div 
+                  className={`h-3 rounded-full transition-all duration-300 ${getProgressBarColor(pointsPercentage)}`}
+                  style={{ width: `${Math.min(pointsPercentage, 100)}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {progress.requirements_met.points ? '¡Requisito cumplido!' : `Te faltan ${progress.missing_requirements.points} puntos`}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-400">{playerStatus.matches_in_category}</div>
-                <div className="text-sm text-gray-400">Partidos en categoría</div>
+            {/* Matches Progress */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-300">Partidos Jugados</span>
+                <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.min_total_matches)}`}>
+                  {progress.total_matches} / {config.min_total_matches}
+                </span>
               </div>
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-green-400">{playerStatus.wins_same_level}</div>
-                <div className="text-sm text-gray-400">Victorias mismo nivel</div>
+              <div className="w-full bg-gray-700 rounded-full h-3">
+                <div 
+                  className={`h-3 rounded-full transition-all duration-300 ${getProgressBarColor(matchesPercentage)}`}
+                  style={{ width: `${Math.min(matchesPercentage, 100)}%` }}
+                ></div>
               </div>
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-purple-400">{playerStatus.wins_higher_level}</div>
-                <div className="text-sm text-gray-400">Victorias nivel superior</div>
+              <p className="text-xs text-gray-500 mt-1">
+                {progress.requirements_met.min_total_matches ? '¡Requisito cumplido!' : `Te faltan ${progress.missing_requirements.min_total_matches} partidos`}
+              </p>
+            </div>
+
+            {/* Win Rate Progress */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-300">Win Rate Mínimo</span>
+                <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.min_win_rate)}`}>
+                  {progress.effectiveness_rate.toFixed(1)}% / {config.min_win_rate}%
+                </span>
               </div>
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-orange-400">{playerStatus.total_wins}</div>
-                <div className="text-sm text-gray-400">Total victorias</div>
+              <div className="w-full bg-gray-700 rounded-full h-3">
+                <div 
+                  className={`h-3 rounded-full transition-all duration-300 ${getProgressBarColor(winRatePercentage)}`}
+                  style={{ width: `${Math.min(winRatePercentage, 100)}%` }}
+                ></div>
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {progress.requirements_met.min_win_rate ? '¡Requisito cumplido!' : `Te faltan ${progress.missing_requirements.min_win_rate.toFixed(1)}% de efectividad`}
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
-        {progress && (
-          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">
-              {allRequirementsMet ? '🎉 ¡Elegible para Ascenso!' : '📋 Requisitos para Ascender'}
-            </h2>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    progress.matches_won_same_level.completed 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-600 text-gray-400'
-                  }`}>
-                    {progress.matches_won_same_level.completed ? '✓' : '○'}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">Victorias vs mismo nivel</div>
-                    <div className="text-sm text-gray-400">
-                      {progress.matches_won_same_level.required - progress.matches_won_same_level.current > 0 
-                        ? `Necesitas ${progress.matches_won_same_level.required - progress.matches_won_same_level.current} más` 
-                        : 'Completado'}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-gray-300">
-                  {progress.matches_won_same_level.current} / {progress.matches_won_same_level.required}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    progress.matches_won_higher_level.completed 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-600 text-gray-400'
-                  }`}>
-                    {progress.matches_won_higher_level.completed ? '✓' : '○'}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">Victorias vs nivel superior</div>
-                    <div className="text-sm text-gray-400">
-                      {progress.matches_won_higher_level.required - progress.matches_won_higher_level.current > 0 
-                        ? `Necesitas ${progress.matches_won_higher_level.required - progress.matches_won_higher_level.current} más` 
-                        : 'Completado'}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-gray-300">
-                  {progress.matches_won_higher_level.current} / {progress.matches_won_higher_level.required}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    progress.min_total_matches.completed 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-600 text-gray-400'
-                  }`}>
-                    {progress.min_total_matches.completed ? '✓' : '○'}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">Total de partidos</div>
-                    <div className="text-sm text-gray-400">
-                      {progress.min_total_matches.required - progress.min_total_matches.current > 0 
-                        ? `Necesitas ${progress.min_total_matches.required - progress.min_total_matches.current} más` 
-                        : 'Completado'}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-gray-300">
-                  {progress.min_total_matches.current} / {progress.min_total_matches.required}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    progress.min_win_rate.completed 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-600 text-gray-400'
-                  }`}>
-                    {progress.min_win_rate.completed ? '✓' : '○'}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">Porcentaje de victorias</div>
-                    <div className="text-sm text-gray-400">
-                      {progress.min_win_rate.required - progress.min_win_rate.current > 0 
-                        ? `Necesitas ${(progress.min_win_rate.required - progress.min_win_rate.current).toFixed(1)}% más` 
-                        : 'Completado'}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-gray-300">
-                  {progress.min_win_rate.current}% / {progress.min_win_rate.required}%
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    progress.min_rating.completed 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-600 text-gray-400'
-                  }`}>
-                    {progress.min_rating.completed ? '✓' : '○'}
-                  </div>
-                  <div>
-                    <div className="font-medium text-white">Rating mínimo</div>
-                    <div className="text-sm text-gray-400">
-                      {progress.min_rating.required - progress.min_rating.current > 0 
-                        ? `Necesitas ${progress.min_rating.required - progress.min_rating.current} puntos más` 
-                        : 'Completado'}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-gray-300">
-                  {progress.min_rating.current} / {progress.min_rating.required}
-                </div>
-              </div>
+        {/* Point System Info */}
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4">Sistema de Puntos</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-gray-700/30 rounded-lg">
+              <div className="text-2xl font-bold text-green-400">+{config.points_per_win}</div>
+              <p className="text-xs text-gray-400 mt-1">Por victoria</p>
             </div>
-
-            {allRequirementsMet && (
-              <div className="mt-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">🎉</div>
-                  <div>
-                    <div className="font-bold text-green-400">¡Felicidades! Elegible para ascenso</div>
-                    <div className="text-sm text-green-300">
-                      Un administrador revisará tu caso y procesará el ascenso pronto.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="text-center p-4 bg-gray-700/30 rounded-lg">
+              <div className="text-2xl font-bold text-blue-400">+{config.points_per_loss}</div>
+              <p className="text-xs text-gray-400 mt-1">Por derrota</p>
+            </div>
+            <div className="text-center p-4 bg-gray-700/30 rounded-lg">
+              <div className="text-2xl font-bold text-purple-400">+{config.bonus_superior_category}</div>
+              <p className="text-xs text-gray-400 mt-1">Bonus vs superior</p>
+            </div>
+            <div className="text-center p-4 bg-gray-700/30 rounded-lg">
+              <div className="text-2xl font-bold text-orange-400">{config.points_decay_months}</div>
+              <p className="text-xs text-gray-400 mt-1">Meses de decaimiento</p>
+            </div>
           </div>
-        )}
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            Los puntos se mantienen por {config.points_decay_months} meses. Después de ese tiempo, los puntos más antiguos se eliminan mes a mes.
+          </p>
+        </div>
 
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-blue-400 mb-3">💡 Consejos para ascender más rápido</h3>
-          <ul className="space-y-2 text-gray-300">
-            <li className="flex items-start gap-2">
-              <span className="text-green-400">•</span>
-              <span>Ganar contra jugadores de categoría superior acelera tu ascenso (cuenta doble)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-400">•</span>
-              <span>Mantén un porcentaje de victorias alto para cumplir los requisitos</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-400">•</span>
-              <span>Sé constante - juega regularmente para acumular experiencia</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-400">•</span>
-              <span>Los partidos perdidos también suman puntos, ¡no te desanimes!</span>
-            </li>
-          </ul>
+        {/* Requirements Summary */}
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4">Resumen de Requisitos</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+              <span className="text-sm text-gray-300">Puntos acumulados</span>
+              <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.points)}`}>
+                {progress.requirements_met.points ? 'Cumplido' : 'Pendiente'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+              <span className="text-sm text-gray-300">Victorias vs mismo nivel</span>
+              <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.matches_won_same_level)}`}>
+                {progress.requirements_met.matches_won_same_level ? 'Cumplido' : 'Pendiente'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+              <span className="text-sm text-gray-300">Partidos mínimos</span>
+              <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.min_total_matches)}`}>
+                {progress.requirements_met.min_total_matches ? 'Cumplido' : 'Pendiente'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+              <span className="text-sm text-gray-300">Win rate mínimo</span>
+              <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.min_win_rate)}`}>
+                {progress.requirements_met.min_win_rate ? 'Cumplido' : 'Pendiente'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </MainLayout>

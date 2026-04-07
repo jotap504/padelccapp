@@ -15,6 +15,11 @@ interface CategoryConfig {
   min_win_rate: number
   min_rating_promotion: number
   rating_buffer: number
+  category_points_max: number
+  points_per_win: number
+  points_per_loss: number
+  bonus_superior_category: number
+  points_decay_months: number
 }
 
 const categories = [
@@ -29,13 +34,104 @@ const categories = [
 ]
 
 const defaultConfigs: { [key: number]: CategoryConfig } = {
-  8: { from_category: 8, matches_won_same_level: 25, matches_won_higher_level: 8, min_total_matches: 35, min_win_rate: 60, min_rating_promotion: 600, rating_buffer: 100 },
-  7: { from_category: 7, matches_won_same_level: 25, matches_won_higher_level: 8, min_total_matches: 35, min_win_rate: 62, min_rating_promotion: 700, rating_buffer: 100 },
-  6: { from_category: 6, matches_won_same_level: 28, matches_won_higher_level: 10, min_total_matches: 40, min_win_rate: 65, min_rating_promotion: 800, rating_buffer: 125 },
-  5: { from_category: 5, matches_won_same_level: 28, matches_won_higher_level: 10, min_total_matches: 40, min_win_rate: 65, min_rating_promotion: 900, rating_buffer: 125 },
-  4: { from_category: 4, matches_won_same_level: 30, matches_won_higher_level: 12, min_total_matches: 45, min_win_rate: 68, min_rating_promotion: 1050, rating_buffer: 150 },
-  3: { from_category: 3, matches_won_same_level: 30, matches_won_higher_level: 12, min_total_matches: 45, min_win_rate: 70, min_rating_promotion: 1200, rating_buffer: 150 },
-  2: { from_category: 2, matches_won_same_level: 35, matches_won_higher_level: 15, min_total_matches: 50, min_win_rate: 75, min_rating_promotion: 1350, rating_buffer: 200 }
+  8: { 
+    from_category: 8, 
+    matches_won_same_level: 15, 
+    matches_won_higher_level: 5, 
+    min_total_matches: 20, 
+    min_win_rate: 55, 
+    min_rating_promotion: 0, 
+    rating_buffer: 0,
+    category_points_max: 500,
+    points_per_win: 20,
+    points_per_loss: 5,
+    bonus_superior_category: 10,
+    points_decay_months: 12
+  },
+  7: { 
+    from_category: 7, 
+    matches_won_same_level: 18, 
+    matches_won_higher_level: 6, 
+    min_total_matches: 25, 
+    min_win_rate: 58, 
+    min_rating_promotion: 0, 
+    rating_buffer: 0,
+    category_points_max: 500,
+    points_per_win: 20,
+    points_per_loss: 5,
+    bonus_superior_category: 10,
+    points_decay_months: 12
+  },
+  6: { 
+    from_category: 6, 
+    matches_won_same_level: 20, 
+    matches_won_higher_level: 8, 
+    min_total_matches: 30, 
+    min_win_rate: 60, 
+    min_rating_promotion: 0, 
+    rating_buffer: 0,
+    category_points_max: 500,
+    points_per_win: 20,
+    points_per_loss: 5,
+    bonus_superior_category: 10,
+    points_decay_months: 12
+  },
+  5: { 
+    from_category: 5, 
+    matches_won_same_level: 22, 
+    matches_won_higher_level: 10, 
+    min_total_matches: 35, 
+    min_win_rate: 62, 
+    min_rating_promotion: 0, 
+    rating_buffer: 0,
+    category_points_max: 500,
+    points_per_win: 20,
+    points_per_loss: 5,
+    bonus_superior_category: 10,
+    points_decay_months: 12
+  },
+  4: { 
+    from_category: 4, 
+    matches_won_same_level: 25, 
+    matches_won_higher_level: 12, 
+    min_total_matches: 40, 
+    min_win_rate: 65, 
+    min_rating_promotion: 0, 
+    rating_buffer: 0,
+    category_points_max: 500,
+    points_per_win: 20,
+    points_per_loss: 5,
+    bonus_superior_category: 10,
+    points_decay_months: 12
+  },
+  3: { 
+    from_category: 3, 
+    matches_won_same_level: 28, 
+    matches_won_higher_level: 15, 
+    min_total_matches: 45, 
+    min_win_rate: 68, 
+    min_rating_promotion: 0, 
+    rating_buffer: 0,
+    category_points_max: 500,
+    points_per_win: 20,
+    points_per_loss: 5,
+    bonus_superior_category: 10,
+    points_decay_months: 12
+  },
+  2: { 
+    from_category: 2, 
+    matches_won_same_level: 30, 
+    matches_won_higher_level: 18, 
+    min_total_matches: 50, 
+    min_win_rate: 70, 
+    min_rating_promotion: 0, 
+    rating_buffer: 0,
+    category_points_max: 500,
+    points_per_win: 20,
+    points_per_loss: 5,
+    bonus_superior_category: 10,
+    points_decay_months: 12
+  }
 }
 
 export default function CategoryPromotionPage() {
@@ -51,7 +147,6 @@ export default function CategoryPromotionPage() {
   useEffect(() => {
     setMounted(true)
     return () => {
-      // Limpiar cualquier petición pendiente
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
@@ -65,7 +160,6 @@ export default function CategoryPromotionPage() {
       return
     }
     
-    // Obtener club_id de la URL de forma segura
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const clubIdFromUrl = urlParams.get('club_id')
@@ -77,12 +171,10 @@ export default function CategoryPromotionPage() {
   }, [mounted, isLoading, isAuthenticated, user, router])
 
   async function loadConfigs(clubId: string) {
-    // Cancelar petición anterior si existe
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
 
-    // Crear nuevo AbortController
     const abortController = new AbortController()
     abortControllerRef.current = abortController
 
@@ -184,8 +276,8 @@ export default function CategoryPromotionPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 p-8 shadow-2xl">
-          <h1 className="text-3xl font-bold text-white mb-2">⚙️ Configuración de Ascensos</h1>
-          <p className="text-purple-100">Ajusta los requisitos para cambiar de categoría</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Configuración de Ascensos</h1>
+          <p className="text-purple-100">Sistema de puntos por categoría con decaimiento temporal</p>
         </div>
 
         {/* Club Selection */}
@@ -219,23 +311,93 @@ export default function CategoryPromotionPage() {
               <div key={category.category} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-white">
-                    Ascenso: {category.name} → {nextCategory?.name}
+                    Ascenso: {category.name} &rarr; {nextCategory?.name}
                   </h3>
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1 bg-gray-700 text-gray-300 rounded-full text-sm">
-                      Rating: {category.rating_min}-{category.rating_max}
+                      {category.name}
                     </span>
                     <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
-                      Hacia: {nextCategory?.rating_min}+
+                      Puntos: 0-{config.category_points_max}
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Victorias mismo nivel */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Puntos por Victoria */}
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Victorias vs mismo nivel
+                      Puntos por Victoria
+                    </label>
+                    <input
+                      type="number"
+                      value={config.points_per_win}
+                      onChange={(e) => handleConfigChange(category.category, 'points_per_win', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Puntos otorgados por cada victoria</p>
+                  </div>
+
+                  {/* Puntos por Derrota */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Puntos por Derrota
+                    </label>
+                    <input
+                      type="number"
+                      value={config.points_per_loss}
+                      onChange={(e) => handleConfigChange(category.category, 'points_per_loss', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Puntos otorgados solo por participar</p>
+                  </div>
+
+                  {/* Bonus vs Categoría Superior */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Bonus vs Categoría Superior
+                    </label>
+                    <input
+                      type="number"
+                      value={config.bonus_superior_category}
+                      onChange={(e) => handleConfigChange(category.category, 'bonus_superior_category', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Puntos extra por ganar vs categorías superiores</p>
+                  </div>
+
+                  {/* Máximo de Puntos para Ascenso */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Máximo de Puntos para Ascenso
+                    </label>
+                    <input
+                      type="number"
+                      value={config.category_points_max}
+                      onChange={(e) => handleConfigChange(category.category, 'category_points_max', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Puntos necesarios para ascender de categoría</p>
+                  </div>
+
+                  {/* Decaimiento por Tiempo */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Decaimiento (meses)
+                    </label>
+                    <input
+                      type="number"
+                      value={config.points_decay_months}
+                      onChange={(e) => handleConfigChange(category.category, 'points_decay_months', parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Meses que se mantienen los puntos (defecto: 12)</p>
+                  </div>
+
+                  {/* Victorias Mismo Nivel */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Victorias vs Mismo Nivel
                     </label>
                     <input
                       type="number"
@@ -243,13 +405,13 @@ export default function CategoryPromotionPage() {
                       onChange={(e) => handleConfigChange(category.category, 'matches_won_same_level', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Mínimo de victorias contra igual categoría</p>
+                    <p className="text-xs text-gray-500 mt-1">Victorias mínimas vs jugadores de misma categoría</p>
                   </div>
 
-                  {/* Victorias nivel superior */}
+                  {/* Victorias Nivel Superior */}
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Victorias vs nivel superior
+                      Victorias vs Nivel Superior
                     </label>
                     <input
                       type="number"
@@ -257,13 +419,13 @@ export default function CategoryPromotionPage() {
                       onChange={(e) => handleConfigChange(category.category, 'matches_won_higher_level', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Victoria contra categorías superiores acelera ascenso</p>
+                    <p className="text-xs text-gray-500 mt-1">Victorias mínimas vs categorías superiores</p>
                   </div>
 
-                  {/* Mínimo de partidos */}
+                  {/* Partidos Mínimos */}
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Total de partidos mínimos
+                      Partidos Mínimos
                     </label>
                     <input
                       type="number"
@@ -271,13 +433,13 @@ export default function CategoryPromotionPage() {
                       onChange={(e) => handleConfigChange(category.category, 'min_total_matches', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Partidos totales en la categoría actual</p>
+                    <p className="text-xs text-gray-500 mt-1">Partidos totales mínimos en la categoría</p>
                   </div>
 
-                  {/* Porcentaje de victorias */}
+                  {/* Win Rate Mínimo */}
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      % Victorias mínimo
+                      Win Rate Mínimo (%)
                     </label>
                     <input
                       type="number"
@@ -287,34 +449,6 @@ export default function CategoryPromotionPage() {
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">Porcentaje mínimo de victorias</p>
-                  </div>
-
-                  {/* Rating mínimo */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Rating mínimo para ascender
-                    </label>
-                    <input
-                      type="number"
-                      value={config.min_rating_promotion || nextCategory?.rating_min || 0}
-                      onChange={(e) => handleConfigChange(category.category, 'min_rating_promotion', parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Rating ELO mínimo para ascender</p>
-                  </div>
-
-                  {/* Buffer de puntos */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Buffer de puntos
-                    </label>
-                    <input
-                      type="number"
-                      value={config.rating_buffer || 150}
-                      onChange={(e) => handleConfigChange(category.category, 'rating_buffer', parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Puntos adicionales sobre el mínimo de categoría</p>
                   </div>
                 </div>
 
