@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { supabase } from '@/lib/supabase/client'
@@ -46,35 +46,57 @@ export default function CategoryPromotionPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [mounted, setMounted] = useState(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     setMounted(true)
+    return () => {
+      // Limpiar cualquier petición pendiente
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
   }, [])
 
   useEffect(() => {
-    if (isLoading) return
+    if (!mounted || isLoading) return
     if (!isAuthenticated || user?.role !== 'admin') {
       router.push('/login')
       return
     }
     
-    // Obtener club_id de la URL
-    const urlParams = new URLSearchParams(window.location.search)
-    const clubIdFromUrl = urlParams.get('club_id')
-    if (clubIdFromUrl) {
-      setClubId(clubIdFromUrl)
-      loadConfigs(clubIdFromUrl)
+    // Obtener club_id de la URL de forma segura
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const clubIdFromUrl = urlParams.get('club_id')
+      if (clubIdFromUrl) {
+        setClubId(clubIdFromUrl)
+        loadConfigs(clubIdFromUrl)
+      }
     }
-  }, [isLoading, isAuthenticated, user, router])
+  }, [mounted, isLoading, isAuthenticated, user, router])
 
   async function loadConfigs(clubId: string) {
+    // Cancelar petición anterior si existe
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Crear nuevo AbortController
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
     setLoading(true)
+    setMessage('')
+
     try {
       const { data, error } = await supabase
         .from('category_promotion_requirements')
         .select('*')
         .eq('club_id', clubId)
         .order('from_category', { ascending: false })
+
+      if (abortController.signal.aborted) return
 
       if (error) {
         console.error('Error loading configs:', error)
@@ -83,10 +105,13 @@ export default function CategoryPromotionPage() {
         setConfigs(data || [])
       }
     } catch (error) {
+      if (abortController.signal.aborted) return
       console.error('Error:', error)
       setMessage('Error al cargar configuración')
     } finally {
-      setLoading(false)
+      if (!abortController.signal.aborted) {
+        setLoading(false)
+      }
     }
   }
 
@@ -130,6 +155,20 @@ export default function CategoryPromotionPage() {
     }
   }
 
+  function handleClubIdChange(newClubId: string) {
+    setClubId(newClubId)
+    if (newClubId) {
+      loadConfigs(newClubId)
+    }
+  }
+
+  function handleConfigChange(category: number, field: keyof CategoryConfig, value: number) {
+    const newConfigs = configs.filter(c => c.from_category !== category)
+    const existingConfig = configs.find(c => c.from_category === category) || defaultConfigs[category]
+    const updatedConfig = { ...existingConfig, [field]: value }
+    setConfigs([...newConfigs, updatedConfig])
+  }
+
   if (!mounted) {
     return (
       <MainLayout>
@@ -155,13 +194,7 @@ export default function CategoryPromotionPage() {
           <input
             type="text"
             value={clubId}
-            onChange={(e) => {
-              const newClubId = e.target.value
-              setClubId(newClubId)
-              if (newClubId) {
-                loadConfigs(newClubId)
-              }
-            }}
+            onChange={(e) => handleClubIdChange(e.target.value)}
             placeholder="ID del Club"
             className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
@@ -207,11 +240,7 @@ export default function CategoryPromotionPage() {
                     <input
                       type="number"
                       value={config.matches_won_same_level}
-                      onChange={(e) => {
-                        const newConfig = { ...config, matches_won_same_level: parseInt(e.target.value) }
-                        const newConfigs = configs.filter(c => c.from_category !== category.category)
-                        setConfigs([...newConfigs, newConfig])
-                      }}
+                      onChange={(e) => handleConfigChange(category.category, 'matches_won_same_level', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">Mínimo de victorias contra igual categoría</p>
@@ -225,11 +254,7 @@ export default function CategoryPromotionPage() {
                     <input
                       type="number"
                       value={config.matches_won_higher_level}
-                      onChange={(e) => {
-                        const newConfig = { ...config, matches_won_higher_level: parseInt(e.target.value) }
-                        const newConfigs = configs.filter(c => c.from_category !== category.category)
-                        setConfigs([...newConfigs, newConfig])
-                      }}
+                      onChange={(e) => handleConfigChange(category.category, 'matches_won_higher_level', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">Victoria contra categorías superiores acelera ascenso</p>
@@ -243,11 +268,7 @@ export default function CategoryPromotionPage() {
                     <input
                       type="number"
                       value={config.min_total_matches}
-                      onChange={(e) => {
-                        const newConfig = { ...config, min_total_matches: parseInt(e.target.value) }
-                        const newConfigs = configs.filter(c => c.from_category !== category.category)
-                        setConfigs([...newConfigs, newConfig])
-                      }}
+                      onChange={(e) => handleConfigChange(category.category, 'min_total_matches', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">Partidos totales en la categoría actual</p>
@@ -262,11 +283,7 @@ export default function CategoryPromotionPage() {
                       type="number"
                       step="0.1"
                       value={config.min_win_rate}
-                      onChange={(e) => {
-                        const newConfig = { ...config, min_win_rate: parseFloat(e.target.value) }
-                        const newConfigs = configs.filter(c => c.from_category !== category.category)
-                        setConfigs([...newConfigs, newConfig])
-                      }}
+                      onChange={(e) => handleConfigChange(category.category, 'min_win_rate', parseFloat(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">Porcentaje mínimo de victorias</p>
@@ -280,11 +297,7 @@ export default function CategoryPromotionPage() {
                     <input
                       type="number"
                       value={config.min_rating_promotion || nextCategory?.rating_min || 0}
-                      onChange={(e) => {
-                        const newConfig = { ...config, min_rating_promotion: parseInt(e.target.value) }
-                        const newConfigs = configs.filter(c => c.from_category !== category.category)
-                        setConfigs([...newConfigs, newConfig])
-                      }}
+                      onChange={(e) => handleConfigChange(category.category, 'min_rating_promotion', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">Rating ELO mínimo para ascender</p>
@@ -298,11 +311,7 @@ export default function CategoryPromotionPage() {
                     <input
                       type="number"
                       value={config.rating_buffer || 150}
-                      onChange={(e) => {
-                        const newConfig = { ...config, rating_buffer: parseInt(e.target.value) }
-                        const newConfigs = configs.filter(c => c.from_category !== category.category)
-                        setConfigs([...newConfigs, newConfig])
-                      }}
+                      onChange={(e) => handleConfigChange(category.category, 'rating_buffer', parseInt(e.target.value) || 0)}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-xs text-gray-500 mt-1">Puntos adicionales sobre el mínimo de categoría</p>
