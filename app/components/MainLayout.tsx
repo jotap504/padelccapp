@@ -71,6 +71,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       icon: '📊',
       children: [
         { id: 'general', label: 'Ranking General', href: '/rankings', icon: '🏆' },
+        { id: 'effectiveness', label: 'Ranking de Efectividad', href: '/rankings/effectiveness', icon: '📊' },
         { id: 'statistics', label: 'Estadísticas', href: '/rankings/statistics', icon: '📈' }
       ]
     },
