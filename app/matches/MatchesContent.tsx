@@ -383,7 +383,7 @@ export default function MatchesContent() {
                             ))}
                           </div>
                         </div>
-                      ) : match.status === 'completed' ? (
+                      ) : match.status === 'confirmed' ? (
                         <div className="mt-2">
                           <p className="text-gray-400 text-xs mb-1">Resultado:</p>
                           <span className="px-2 py-1 bg-yellow-600 rounded text-xs text-white">
@@ -401,8 +401,9 @@ export default function MatchesContent() {
                       
                       <p className="text-gray-500 text-sm mt-2">
                         Estado: {
-                          match.status === 'completed' ? 'Finalizado' :
                           match.status === 'confirmed' ? 'Confirmado' :
+                          match.status === 'disputed' ? 'Disputado' :
+                          match.status === 'cancelled' ? 'Cancelado' :
                           match.status === 'pending' ? 'Pendiente' :
                           match.status
                         }
@@ -418,7 +419,7 @@ export default function MatchesContent() {
                           Validar
                         </button>
                       )}
-                      {match.status === 'completed' && (!match.sets || !Array.isArray(match.sets) || match.sets.length === 0 || !match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)) && (
+                      {match.status === 'confirmed' && (!match.sets || !Array.isArray(match.sets) || match.sets.length === 0 || !match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)) && (
                         <button
                           onClick={() => window.location.href = `/matches/${match.id}/edit`}
                           className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
