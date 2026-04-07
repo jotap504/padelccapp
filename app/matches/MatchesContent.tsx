@@ -84,6 +84,7 @@ export default function MatchesContent() {
 
   async function loadMatches() {
     try {
+      setLoading(true)
       let query = supabase
         .from('matches')
         .select('*')
@@ -97,11 +98,16 @@ export default function MatchesContent() {
 
       if (error) {
         console.error('Error loading matches:', error)
+        setMessage('Error al cargar partidos')
+        setMatches([])
       } else {
+        console.log('Matches loaded:', data)
         setMatches(data || [])
       }
     } catch (error) {
       console.error('Error:', error)
+      setMessage('Error al cargar partidos')
+      setMatches([])
     } finally {
       setLoading(false)
     }
@@ -349,26 +355,62 @@ export default function MatchesContent() {
               {matches.map((match) => (
                 <div key={match.id} className="bg-gray-700/50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-white font-medium">
                         {new Date(match.date).toLocaleDateString('es-AR')}
                       </p>
-                      <p className="text-gray-400 text-sm">
-                        {match.team_a?.map((p: any) => p.name).join(' + ')} vs {match.team_b?.map((p: any) => p.name).join(' + ')}
+                      <p className="text-gray-300 text-sm font-medium mt-1">
+                        {match.team_a && Array.isArray(match.team_a) 
+                          ? match.team_a.map((p: any) => p.name || 'Jugador').join(' + ')
+                          : 'Equipo A'
+                        } 
+                        {' vs '}
+                        {match.team_b && Array.isArray(match.team_b) 
+                          ? match.team_b.map((p: any) => p.name || 'Jugador').join(' + ')
+                          : 'Equipo B'
+                        }
                       </p>
-                      <p className="text-gray-500 text-sm">
-                        Estado: {match.status === 'confirmed' ? '✅ Confirmado' : '⏳ Pendiente'}
+                      
+                      {/* Mostrar resultados si existen */}
+                      {match.sets && Array.isArray(match.sets) && match.sets.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-gray-400 text-xs mb-1">Resultado:</p>
+                          <div className="flex gap-2">
+                            {match.sets.map((set: any, index: number) => (
+                              <span key={index} className="px-2 py-1 bg-gray-600 rounded text-xs text-white">
+                                {set.team_a || 0} - {set.team_b || 0}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <p className="text-gray-500 text-sm mt-2">
+                        Estado: {
+                          match.status === 'completed' ? 'Finalizado' :
+                          match.status === 'confirmed' ? 'Confirmado' :
+                          match.status === 'pending' ? 'Pendiente' :
+                          match.status
+                        }
                       </p>
                     </div>
                     
-                    {match.status === 'pending' && !match.validated_by?.includes(user?.id || '') && (
+                    <div className="flex gap-2 ml-4">
+                      {match.status === 'pending' && !match.validated_by?.includes(user?.id || '') && (
+                        <button
+                          onClick={() => validateMatch(match.id)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                        >
+                          Validar
+                        </button>
+                      )}
                       <button
-                        onClick={() => validateMatch(match.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        onClick={() => window.location.href = `/matches/${match.id}`}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                       >
-                        Validar
+                        Detalles
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               ))}
