@@ -15,6 +15,7 @@ interface Match {
   team_b: Array<{ user_id: string; name: string }>
   sets: Array<{ team_a: number; team_b: number }>
   format: '3' | '5'
+  validated_by?: string[]
 }
 
 export default function EditMatchPage() {
