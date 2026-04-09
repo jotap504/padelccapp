@@ -188,34 +188,14 @@ export default function MatchesContent() {
 
   async function validateMatch(matchId: string) {
     if (!user) return
-
     try {
-      const { data: match } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('id', matchId)
-        .single()
-
+      const { data: match } = await supabase.from('matches').select('*').eq('id', matchId).single()
       if (!match) return
-
       const validatedBy = match.validated_by || []
-      if (!validatedBy.includes(user.id)) {
-        validatedBy.push(user.id)
-      }
-
-      const { error } = await supabase
-        .from('matches')
-        .update({ 
-          validated_by: validatedBy,
-          status: validatedBy.length >= 2 ? 'confirmed' : 'pending'
-        })
-        .eq('id', matchId)
-
-      if (error) {
-        console.error('Error validating match:', error)
-      } else {
-        loadMatches()
-      }
+      if (!validatedBy.includes(user.id)) validatedBy.push(user.id)
+      const { error } = await supabase.from('matches').update({ validated_by: validatedBy, status: validatedBy.length >= 2 ? 'confirmed' : 'pending' }).eq('id', matchId)
+      if (error) console.error('Error validating match:', error)
+      else loadMatches()
     } catch (error) {
       console.error('Error:', error)
     }
@@ -228,7 +208,7 @@ export default function MatchesContent() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       </MainLayout>
-    );
+    )
   }
 
   return (
