@@ -36,7 +36,6 @@ export default function MatchesContent() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showOnlyMyMatches, setShowOnlyMyMatches] = useState(false)
   
-  // Check for create=true parameter
   useEffect(() => {
     const shouldCreate = searchParams.get('create')
     if (shouldCreate === 'true') {
@@ -44,34 +43,29 @@ export default function MatchesContent() {
     }
   }, [searchParams])
   
-  // Create match form
   const [myTeam, setMyTeam] = useState<'A' | 'B'>('A')
   const [myPartner, setMyPartner] = useState('')
   const [opponent1, setOpponent1] = useState('')
   const [opponent2, setOpponent2] = useState('')
-  const [matchDate, setMatchDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [matchDate, setMatchDate] = useState(new Date().toISOString().split('T')[0])
   const [format, setFormat] = useState<'3' | '5'>('3')
   const [creating, setCreating] = useState(false)
-  const [message, setMessage] = useState<string | React.ReactNode>('')
+  const [message, setMessage] = useState<React.ReactNode>('')
 
   useEffect(() => {
-    if (isLoading) return
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login')
       return
     }
-    loadPlayers()
-    loadMatches()
-  }, [isLoading, isAuthenticated, router])
+    if (isAuthenticated) {
+      loadPlayers()
+      loadMatches()
+    }
+  }, [isAuthenticated, isLoading, router])
 
   async function loadPlayers() {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, name, category, rating')
-        .neq('id', user?.id || '')
-        .order('name')
-
+      const { data, error } = await supabase.from('users').select('id, name, category, rating').order('name')
       if (error) {
         console.error('Error loading players:', error)
       } else {
@@ -85,28 +79,21 @@ export default function MatchesContent() {
   async function loadMatches() {
     try {
       setLoading(true)
-      let query = supabase
-        .from('matches')
-        .select('*')
-        .order('date', { ascending: false })
-
+      let query = supabase.from('matches').select('*').order('date', { ascending: false })
+      
       if (showOnlyMyMatches && user) {
         query = query.or(`team_a.cs.{"user_id":"${user.id}"},team_b.cs.{"user_id":"${user.id}"}`)
       }
-
+      
       const { data, error } = await query
-
+      
       if (error) {
         console.error('Error loading matches:', error)
-        setMessage('Error al cargar partidos')
-        setMatches([])
       } else {
-        console.log('Matches loaded:', data)
         setMatches(data || [])
       }
     } catch (error) {
       console.error('Error:', error)
-      setMessage('Error al cargar partidos')
       setMatches([])
     } finally {
       setLoading(false)
@@ -122,12 +109,12 @@ export default function MatchesContent() {
     if (!user.club_id) {
       setMessage(
         <div className="space-y-2">
-          <p>Error: Sesión sin club_id. Necesitás cerrar sesión y volver a entrar.</p>
+          <p>Error: Sesion sin club_id. Necesitas cerrar sesion y volver a entrar.</p>
           <button 
             onClick={() => { localStorage.removeItem('padel_session'); window.location.href = '/login'; }}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
           >
-            Cerrar sesión y reintentar
+            Cerrar sesion y reintentar
           </button>
         </div>
       )
@@ -146,7 +133,6 @@ export default function MatchesContent() {
         ? [{ user_id: opponent1, name: players.find(p => p.id === opponent1)?.name }, { user_id: opponent2, name: players.find(p => p.id === opponent2)?.name }]
         : [{ user_id: user.id, name: user.name }, { user_id: myPartner, name: players.find(p => p.id === myPartner)?.name }]
 
-      // Debug: log de los datos que se envían
       const matchData = {
         club_id: user.club_id,
         date: matchDate,
@@ -157,21 +143,16 @@ export default function MatchesContent() {
         validated_by: [user.id],
         created_by: user.id
       }
+      
       console.log('Creating match with data:', matchData)
-      console.log('User:', user)
-      console.log('User club_id:', user.club_id)
-      console.log('User id:', user.id)
-      console.log('User member_number:', user.member_number)
 
-      const { data, error } = await supabase
-        .from('matches')
-        .insert(matchData)
+      const { data, error } = await supabase.from('matches').insert(matchData)
 
       if (error) {
         console.error('Error creating match:', error)
         setMessage(`Error al crear el partido: ${error.message} (code: ${error.code})`)
       } else {
-        setMessage('¡Partido creado exitosamente!')
+        setMessage('Partido creado exitosamente!')
         setShowCreateForm(false)
         setMyPartner('')
         setOpponent1('')
@@ -186,24 +167,19 @@ export default function MatchesContent() {
     }
   }
 
-  async function handleValidateMatch(matchId: string) {
+  async function handleValidate(matchId: string) {
     if (!user) return
     try {
-      const { data: matchData } = await supabase.from('matches').select('*').eq('id', matchId).single()
-      if (!matchData) return
-      const validatedBy = matchData.validated_by || []
-      if (!validatedBy.includes(user.id)) {
-        validatedBy.push(user.id)
-      }
+      const { data: m } = await supabase.from('matches').select('*').eq('id', matchId).single()
+      if (!m) return
+      const validatedBy = m.validated_by || []
+      if (!validatedBy.includes(user.id)) validatedBy.push(user.id)
       const { error } = await supabase.from('matches').update({ 
         validated_by: validatedBy, 
         status: validatedBy.length >= 2 ? 'confirmed' : 'pending' 
       }).eq('id', matchId)
-      if (error) {
-        console.error('Error validating match:', error)
-      } else {
-        loadMatches()
-      }
+      if (error) console.error('Error:', error)
+      else loadMatches()
     } catch (err) {
       console.error('Error:', err)
     }
@@ -222,35 +198,31 @@ export default function MatchesContent() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 p-8 shadow-2xl">
-          <h1 className="text-3xl font-bold text-white mb-2">🏓 Partidos</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Partidos</h1>
           <p className="text-blue-100">Gestiona tus partidos y resultados</p>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-wrap gap-4">
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {showCreateForm ? 'Cancelar' : '➕ Crear Partido'}
+            {showCreateForm ? 'Cancelar' : 'Crear Partido'}
           </button>
           <button
             onClick={() => setShowOnlyMyMatches(!showOnlyMyMatches)}
             className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
           >
-            {showOnlyMyMatches ? '👥 Todos los partidos' : '🏓 Mis partidos'}
+            {showOnlyMyMatches ? 'Todos los partidos' : 'Mis partidos'}
           </button>
         </div>
 
-        {/* Create Form */}
         {showCreateForm && (
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Crear Nuevo Partido</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Fecha</label>
                 <input
@@ -261,7 +233,6 @@ export default function MatchesContent() {
                 />
               </div>
 
-              {/* Format */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Formato</label>
                 <select
@@ -274,7 +245,6 @@ export default function MatchesContent() {
                 </select>
               </div>
 
-              {/* Team Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Tu equipo</label>
                 <div className="flex gap-2">
@@ -297,35 +267,39 @@ export default function MatchesContent() {
                 </div>
               </div>
 
-              {/* Partner */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Tu compañero</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Tu compañero {myTeam === 'A' ? '(Equipo A)' : '(Equipo B)'}
+                </label>
                 <PlayerSearchSelect
-                  players={players}
+                  players={players.filter(p => p.id !== user?.id)}
                   value={myPartner}
                   onChange={setMyPartner}
                   placeholder="Buscar compañero..."
                 />
               </div>
 
-              {/* Opponents */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Oponente 1</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Oponente 1 {myTeam === 'A' ? '(Equipo B)' : '(Equipo A)'}
+                </label>
                 <PlayerSearchSelect
-                  players={players}
+                  players={players.filter(p => p.id !== user?.id && p.id !== myPartner)}
                   value={opponent1}
                   onChange={setOpponent1}
-                  placeholder="Buscar oponente..."
+                  placeholder="Buscar oponente 1..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Oponente 2</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Oponente 2 {myTeam === 'A' ? '(Equipo B)' : '(Equipo A)'}
+                </label>
                 <PlayerSearchSelect
-                  players={players}
+                  players={players.filter(p => p.id !== user?.id && p.id !== myPartner && p.id !== opponent1)}
                   value={opponent2}
                   onChange={setOpponent2}
-                  placeholder="Buscar oponente..."
+                  placeholder="Buscar oponente 2..."
                 />
               </div>
             </div>
@@ -338,25 +312,24 @@ export default function MatchesContent() {
               </div>
             )}
 
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Cancelar
-              </button>
+            <div className="mt-6 flex gap-4">
               <button
                 onClick={createMatch}
-                disabled={creating}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                disabled={creating || !myPartner || !opponent1 || !opponent2}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creating ? 'Creando...' : 'Crear Partido'}
+              </button>
+              <button
+                onClick={() => setShowCreateForm(false)}
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
               </button>
             </div>
           </div>
         )}
 
-        {/* Matches List */}
         <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
           <h2 className="text-xl font-bold text-white mb-4">
             {showOnlyMyMatches ? 'Mis Partidos' : 'Todos los Partidos'}
@@ -365,106 +338,91 @@ export default function MatchesContent() {
           {matches.length > 0 ? (
             <div className="space-y-4">
               {matches.map((match) => (
-                <div key={match.id} className={match.status === 'confirmed' ? 'rounded-lg p-4 bg-green-900/30 border border-green-700/30' : match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0) ? 'rounded-lg p-4 bg-yellow-900/30 border border-yellow-700/30' : 'rounded-lg p-4 bg-blue-900/30 border border-blue-700/30'}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-white font-medium">
-                        {new Date(match.date).toLocaleDateString('es-AR')}
-                      </p>
-                      <p className="text-gray-300 text-sm font-medium mt-1">
-                        {match.team_a && Array.isArray(match.team_a) 
-                          ? match.team_a.map((p: any) => p.name || 'Jugador').join(' + ')
-                          : 'Equipo A'
-                        } 
-                        {' vs '}
-                        {match.team_b && Array.isArray(match.team_b) 
-                          ? match.team_b.map((p: any) => p.name || 'Jugador').join(' + ')
-                          : 'Equipo B'
-                        }
-                      </p>
-                      
-                      {/* Mostrar resultados si existen */}
-                      {match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0) ? (
-                        <div className="mt-2">
-                          <p className="text-gray-400 text-xs mb-1">Resultado:</p>
-                          <div className="flex gap-2">
-                            {match.sets.map((set: any, index: number) => (
-                              <span key={index} className="px-2 py-1 bg-gray-600 rounded text-xs text-white">
-                                {set.team_a || 0} - {set.team_b || 0}
-                              </span>
-                            ))}
+                <div key={match.id}>
+                  <div className={match.status === 'confirmed' 
+                    ? 'rounded-lg p-4 bg-green-900/30 border border-green-700/30' 
+                    : match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0)
+                    ? 'rounded-lg p-4 bg-yellow-900/30 border border-yellow-700/30' 
+                    : 'rounded-lg p-4 bg-blue-900/30 border border-blue-700/30'
+                  }>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-white font-medium">
+                          {new Date(match.date).toLocaleDateString('es-AR')}
+                        </p>
+                        <p className="text-gray-300 text-sm font-medium mt-1">
+                          {match.team_a?.map((p: any) => p.name || 'Jugador').join(' + ')} vs {match.team_b?.map((p: any) => p.name || 'Jugador').join(' + ')}
+                        </p>
+                        
+                        {match.sets && match.sets.length > 0 && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0) ? (
+                          <div className="mt-2">
+                            <p className="text-gray-400 text-xs mb-1">Resultado:</p>
+                            <div className="flex gap-2">
+                              {match.sets.map((s: any, i: number) => (
+                                <span key={i} className="px-2 py-1 bg-gray-600 rounded text-xs text-white">
+                                  {s.team_a || 0} - {s.team_b || 0}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ) : match.status === 'confirmed' ? (
-                        <div className="mt-2">
-                          <p className="text-gray-400 text-xs mb-1">Resultado:</p>
-                          <span className="px-2 py-1 bg-yellow-600 rounded text-xs text-white">
-                            Sin registrar
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="mt-2">
-                          <p className="text-gray-400 text-xs mb-1">Resultado:</p>
-                          <span className="px-2 py-1 bg-gray-600 rounded text-xs text-white">
-                            Por jugar
-                          </span>
-                        </div>
-                      )}
+                        ) : match.status === 'confirmed' ? (
+                          <div className="mt-2">
+                            <p className="text-gray-400 text-xs mb-1">Resultado:</p>
+                            <span className="px-2 py-1 bg-yellow-600 rounded text-xs text-white">Sin registrar</span>
+                          </div>
+                        ) : (
+                          <div className="mt-2">
+                            <p className="text-gray-400 text-xs mb-1">Resultado:</p>
+                            <span className="px-2 py-1 bg-gray-600 rounded text-xs text-white">Por jugar</span>
+                          </div>
+                        )}
+                        
+                        <p className="text-gray-500 text-sm mt-2">
+                          Estado: {match.status === 'confirmed' ? 'Confirmado' : match.sets && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0) ? 'A espera de validacion' : 'Por jugar'}
+                        </p>
+                      </div>
                       
-                      <p className="text-gray-500 text-sm mt-2">
-                        Estado: {
-                          match.status === 'confirmed' ? '✅ Confirmado' :
-                          match.status === 'disputed' ? '⚠️ Disputado' :
-                          match.status === 'cancelled' ? '❌ Cancelado' :
-                          match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)
-                          ? '⏳ A espera de validación'
-                          : match.status === 'pending' ? '📅 Por jugar' :
-                          match.status
-                        }
-                      </p>
+                      <button
+                        onClick={() => window.location.href = `/matches/${match.id}`}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm ml-4"
+                      >
+                        Detalles
+                      </button>
                     </div>
-                    
-                    <button
-                      onClick={() => window.location.href = `/matches/${match.id}`}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm ml-4"
-                    >
-                      Detalles
-                    </button>
                   </div>
-                </div>
 
-                {/* Botones de acción afuera del contenedor */}
-                <div className="flex gap-2 mt-2">
-                  {match.status === 'pending' && !match.validated_by?.includes(user?.id || '') && (
-                    <button
-                      onClick={() => handleValidateMatch(match.id)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                    >
-                      Validar
-                    </button>
-                  )}
-                  {match.status === 'confirmed' && (!match.sets || !Array.isArray(match.sets) || match.sets.length === 0 || !match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)) && (
-                    <button
-                      onClick={() => window.location.href = `/matches/${match.id}/edit`}
-                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
-                    >
-                      Registrar Resultado
-                    </button>
-                  )}
-                  {match.status === 'pending' && match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0) && (
-                    <button
-                      onClick={() => window.location.href = `/matches/${match.id}/edit`}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
-                    >
-                      Cargar Resultado
-                    </button>
-                  )}
+                  <div className="flex gap-2 mt-2">
+                    {match.status === 'pending' && !match.validated_by?.includes(user?.id || '') && (
+                      <button
+                        onClick={() => handleValidate(match.id)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                      >
+                        Validar
+                      </button>
+                    )}
+                    {match.status === 'confirmed' && (!match.sets || !match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0)) && (
+                      <button
+                        onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                      >
+                        Registrar Resultado
+                      </button>
+                    )}
+                    {match.status === 'pending' && match.sets && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0) && (
+                      <button
+                        onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                      >
+                        Cargar Resultado
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p className="text-4xl mb-2">🏓</p>
+              <p className="text-4xl mb-2">-</p>
               <p>No hay partidos registrados</p>
             </div>
           )}
