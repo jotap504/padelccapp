@@ -377,7 +377,15 @@ export default function MatchesContent() {
           {matches.length > 0 ? (
             <div className="space-y-4">
               {matches.map((match) => (
-                <div key={match.id} className="bg-gray-700/50 rounded-lg p-4">
+                <div key={match.id} className={`
+                  rounded-lg p-4
+                  ${match.status === 'confirmed' 
+                    ? 'bg-green-900/30 border border-green-700/30' 
+                    : match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)
+                    ? 'bg-yellow-900/30 border border-yellow-700/30'
+                    : 'bg-blue-900/30 border border-blue-700/30'
+                  }
+                `}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-white font-medium">
@@ -425,40 +433,52 @@ export default function MatchesContent() {
                       
                       <p className="text-gray-500 text-sm mt-2">
                         Estado: {
-                          match.status === 'confirmed' ? 'Confirmado' :
-                          match.status === 'disputed' ? 'Disputado' :
-                          match.status === 'cancelled' ? 'Cancelado' :
-                          match.status === 'pending' ? 'Pendiente' :
+                          match.status === 'confirmed' ? '✅ Confirmado' :
+                          match.status === 'disputed' ? '⚠️ Disputado' :
+                          match.status === 'cancelled' ? '❌ Cancelado' :
+                          match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)
+                          ? '⏳ A espera de validación'
+                          : match.status === 'pending' ? '📅 Por jugar' :
                           match.status
                         }
                       </p>
                     </div>
                     
-                    <div className="flex gap-2 ml-4">
-                      {match.status === 'pending' && !match.validated_by?.includes(user?.id || '') && (
-                        <button
-                          onClick={() => validateMatch(match.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                        >
-                          Validar
-                        </button>
-                      )}
-                      {match.status === 'confirmed' && (!match.sets || !Array.isArray(match.sets) || match.sets.length === 0 || !match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)) && (
-                        <button
-                          onClick={() => window.location.href = `/matches/${match.id}/edit`}
-                          className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
-                        >
-                          Registrar Resultado
-                        </button>
-                      )}
-                      <button
-                        onClick={() => window.location.href = `/matches/${match.id}`}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                      >
-                        Detalles
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => window.location.href = `/matches/${match.id}`}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm ml-4"
+                    >
+                      Detalles
+                    </button>
                   </div>
+                </div>
+
+                {/* Botones de acción afuera del contenedor */}
+                <div className="flex gap-2 mt-2">
+                  {match.status === 'pending' && !match.validated_by?.includes(user?.id || '') && (
+                    <button
+                      onClick={() => validateMatch(match.id)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                    >
+                      Validar
+                    </button>
+                  )}
+                  {match.status === 'confirmed' && (!match.sets || !Array.isArray(match.sets) || match.sets.length === 0 || !match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0)) && (
+                    <button
+                      onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                    >
+                      Registrar Resultado
+                    </button>
+                  )}
+                  {match.status === 'pending' && match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0) && (
+                    <button
+                      onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                    >
+                      Cargar Resultado
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
