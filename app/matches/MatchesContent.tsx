@@ -382,12 +382,30 @@ export default function MatchesContent() {
                         </p>
                       </div>
                       
-                      <button
-                        onClick={() => window.location.href = `/matches/${match.id}`}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm ml-4"
-                      >
-                        Detalles
-                      </button>
+                      <div className="flex gap-2 ml-4">
+                        {match.status === 'pending' && match.sets && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0) && (
+                          <button
+                            onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                          >
+                            Cargar Resultado
+                          </button>
+                        )}
+                        {match.status === 'confirmed' && (!match.sets || !match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0)) && (
+                          <button
+                            onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                          >
+                            Registrar Resultado
+                          </button>
+                        )}
+                        <button
+                          onClick={() => window.location.href = `/matches/${match.id}`}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          Detalles
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -398,22 +416,6 @@ export default function MatchesContent() {
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                       >
                         Validar
-                      </button>
-                    )}
-                    {match.status === 'confirmed' && (!match.sets || !match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0)) && (
-                      <button
-                        onClick={() => window.location.href = `/matches/${match.id}/edit`}
-                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
-                      >
-                        Registrar Resultado
-                      </button>
-                    )}
-                    {match.status === 'pending' && match.sets && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0) && (
-                      <button
-                        onClick={() => window.location.href = `/matches/${match.id}/edit`}
-                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
-                      >
-                        Cargar Resultado
                       </button>
                     )}
                   </div>
