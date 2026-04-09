@@ -16,7 +16,7 @@ interface NavItem {
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [expandedSections, setExpandedSections] = useState<string[]>(['matches'])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -214,7 +214,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </nav>
 
         {/* User Profile */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800 bg-gray-900">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800 bg-gray-900 space-y-2">
           <Link href="/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-800 transition-colors">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-semibold">
               {user?.name?.[0]?.toUpperCase() || 'U'}
@@ -224,6 +224,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <p className="text-xs text-gray-500 truncate">{user?.email || ''}</p>
             </div>
           </Link>
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span className="text-sm font-medium">Cerrar Sesión</span>
+          </button>
         </div>
       </aside>
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import Header from '@/app/components/Header'
+import MainLayout from '@/app/components/MainLayout'
 
 const CATEGORIES = [
   { value: 1, label: '1ra (1400 pts)', rating: 1400 },
@@ -190,231 +190,236 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header title="Mi Perfil" />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <p>Cargando...</p>
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   const needsCategory = !category
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title="Mi Perfil" />
+    <MainLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 p-8 shadow-2xl">
+          <h1 className="text-3xl font-bold text-white mb-2">⚙️ Mi Perfil</h1>
+          <p className="text-blue-100">Configuración de tu cuenta</p>
+        </div>
 
-      {/* Main content */}
-      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-        {needsCategory && (
-          <div className="mb-6 rounded-md bg-blue-50 p-4">
-            <p className="text-sm text-blue-800">
-              <strong>¡Bienvenido!</strong> Por favor, seleccioná tu categoría para completar tu perfil y empezar a jugar.
-            </p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
-          {/* Category - Required */}
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-              Categoría <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            >
-              <option value="">Seleccionar categoría...</option>
-              {CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Elegí la categoría en la que creés que jugás. El sistema la validará automáticamente con tu rendimiento.
-            </p>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email (opcional)
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder="tu@email.com"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Necesario para recuperar tu contraseña
-            </p>
-          </div>
-
-          {/* WhatsApp */}
-          <div>
-            <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700">
-              WhatsApp (opcional)
-            </label>
-            <input
-              type="tel"
-              id="whatsapp"
-              value={whatsappPhone}
-              onChange={(e) => setWhatsappPhone(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder="+5491123456789"
-            />
-          </div>
-
-          {/* Handedness */}
-          <div>
-            <label htmlFor="handedness" className="block text-sm font-medium text-gray-700">
-              Diestro/Zurdo
-            </label>
-            <select
-              id="handedness"
-              value={handedness}
-              onChange={(e) => setHandedness(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            >
-              {HANDEDNESS.map((h) => (
-                <option key={h.value} value={h.value}>
-                  {h.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Preferred Side */}
-          <div>
-            <label htmlFor="side" className="block text-sm font-medium text-gray-700">
-              Lado preferido en la cancha
-            </label>
-            <select
-              id="side"
-              value={preferredSide}
-              onChange={(e) => setPreferredSide(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            >
-              {SIDES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Email Notifications */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="notifications"
-              checked={emailNotifications}
-              onChange={(e) => setEmailNotifications(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="notifications" className="ml-2 block text-sm text-gray-700">
-              Recibir notificaciones por email
-            </label>
-          </div>
-
-          {/* Message */}
-          {message && (
-            <div className={`rounded-md p-3 ${message.includes('Error') ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>
-              <p className="text-sm">{message}</p>
+        {/* Main content */}
+        <main className="mx-auto max-w-2xl">
+          {needsCategory && (
+            <div className="mb-6 rounded-xl bg-blue-500/20 border border-blue-500/30 p-4">
+              <p className="text-sm text-blue-300">
+                <strong>¡Bienvenido!</strong> Por favor, seleccioná tu categoría para completar tu perfil y empezar a jugar.
+              </p>
             </div>
           )}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Guardando...' : 'Guardar Perfil'}
-          </button>
-        </form>
-
-        {/* Password Change Section */}
-        <div className="mt-8 bg-white p-6 rounded-lg shadow">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900">Cambiar Contraseña</h2>
-            <button
-              onClick={() => setShowPasswordForm(!showPasswordForm)}
-              className="text-sm text-blue-600 hover:text-blue-500"
-            >
-              {showPasswordForm ? 'Cancelar' : 'Cambiar contraseña'}
-            </button>
-          </div>
-
-          {showPasswordForm && (
-            <form onSubmit={handlePasswordChange} className="mt-4 space-y-4">
-              <div>
-                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-                  Contraseña actual
-                </label>
-                <input
-                  type="password"
-                  id="currentPassword"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                  Nueva contraseña
-                </label>
-                <input
-                  type="password"
-                  id="newPassword"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirmar nueva contraseña
-                </label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              {passwordMessage && (
-                <div className={`rounded-md p-3 ${passwordMessage.includes('Error') ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>
-                  <p className="text-sm">{passwordMessage}</p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={changingPassword}
-                className="w-full rounded-md bg-gray-800 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          <form onSubmit={handleSubmit} className="space-y-6 bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-6 rounded-xl">
+            {/* Category - Required */}
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-300">
+                Categoría <span className="text-red-400">*</span>
+              </label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
-                {changingPassword ? 'Actualizando...' : 'Cambiar Contraseña'}
+                <option value="">Seleccionar categoría...</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-400">
+                Elegí la categoría en la que creés que jugás. El sistema la validará automáticamente con tu rendimiento.
+              </p>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                Email (opcional)
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="tu@email.com"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Necesario para recuperar tu contraseña
+              </p>
+            </div>
+
+            {/* WhatsApp */}
+            <div>
+              <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-300">
+                WhatsApp (opcional)
+              </label>
+              <input
+                type="tel"
+                id="whatsapp"
+                value={whatsappPhone}
+                onChange={(e) => setWhatsappPhone(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="+5491123456789"
+              />
+            </div>
+
+            {/* Handedness */}
+            <div>
+              <label htmlFor="handedness" className="block text-sm font-medium text-gray-300">
+                Diestro/Zurdo
+              </label>
+              <select
+                id="handedness"
+                value={handedness}
+                onChange={(e) => setHandedness(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              >
+                {HANDEDNESS.map((h) => (
+                  <option key={h.value} value={h.value}>
+                    {h.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Preferred Side */}
+            <div>
+              <label htmlFor="side" className="block text-sm font-medium text-gray-300">
+                Lado preferido en la cancha
+              </label>
+              <select
+                id="side"
+                value={preferredSide}
+                onChange={(e) => setPreferredSide(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              >
+                {SIDES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Email Notifications */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="notifications"
+                checked={emailNotifications}
+                onChange={(e) => setEmailNotifications(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="notifications" className="ml-2 block text-sm text-gray-300">
+                Recibir notificaciones por email
+              </label>
+            </div>
+
+            {/* Message */}
+            {message && (
+              <div className={`rounded-md p-3 ${message.includes('Error') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                <p className="text-sm">{message}</p>
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Guardando...' : 'Guardar Perfil'}
+            </button>
+          </form>
+
+          {/* Password Change Section */}
+          <div className="mt-8 bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-6 rounded-xl">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-white">Cambiar Contraseña</h2>
+              <button
+                onClick={() => setShowPasswordForm(!showPasswordForm)}
+                className="text-sm text-blue-400 hover:text-blue-300"
+              >
+                {showPasswordForm ? 'Cancelar' : 'Cambiar contraseña'}
               </button>
-            </form>
-          )}
-        </div>
-      </main>
-    </div>
+            </div>
+
+            {showPasswordForm && (
+              <form onSubmit={handlePasswordChange} className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-300">
+                    Contraseña actual
+                  </label>
+                  <input
+                    type="password"
+                    id="currentPassword"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-300">
+                    Nueva contraseña
+                  </label>
+                  <input
+                    type="password"
+                    id="newPassword"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
+                    Confirmar nueva contraseña
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+
+                {passwordMessage && (
+                  <div className={`rounded-md p-3 ${passwordMessage.includes('Error') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                    <p className="text-sm">{passwordMessage}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={changingPassword}
+                  className="w-full rounded-md bg-gray-600 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {changingPassword ? 'Actualizando...' : 'Cambiar Contraseña'}
+                </button>
+              </form>
+            )}
+          </div>
+        </main>
+      </div>
+    </MainLayout>
   )
 }
