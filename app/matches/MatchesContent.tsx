@@ -357,12 +357,7 @@ export default function MatchesContent() {
           {matches.length > 0 ? (
             <div className="space-y-4">
               {matches.map((match) => (
-                <div key={match.id} className={(() => {
-                  const hasResult = match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0);
-                  if (match.status === 'confirmed') return 'rounded-lg p-4 bg-green-900/30 border border-green-700/30';
-                  if (hasResult) return 'rounded-lg p-4 bg-yellow-900/30 border border-yellow-700/30';
-                  return 'rounded-lg p-4 bg-blue-900/30 border border-blue-700/30';
-                })()}>
+                <div key={match.id} className={match.status === 'confirmed' ? 'rounded-lg p-4 bg-green-900/30 border border-green-700/30' : match.sets && Array.isArray(match.sets) && match.sets.length > 0 && match.sets.some((set: any) => set.team_a > 0 || set.team_b > 0) ? 'rounded-lg p-4 bg-yellow-900/30 border border-yellow-700/30' : 'rounded-lg p-4 bg-blue-900/30 border border-blue-700/30'}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-white font-medium">
