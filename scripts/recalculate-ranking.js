@@ -186,11 +186,11 @@ async function recalculateRanking() {
     if (stats.total_matches === 0) continue;
     
     const player = playerMap[id];
-    const config = clubConfigs[player?.club_id] || { base_rating: 1500, min_rating: 1000 };
+    const config = clubConfigs[player?.club_id] || { base_rating: 0, min_rating: 0, max_rating: 500 };
     
     const winRate = Math.round((stats.wins / stats.total_matches) * 100);
     let rating = config.base_rating + stats.rating_change;
-    rating = Math.max(config.min_rating, Math.round(rating));
+    rating = Math.max(config.min_rating || 0, Math.min(config.max_rating || 500, Math.round(rating)));
     
     console.log(`${stats.name} (Cat ${stats.category}): ${stats.wins}W/${stats.losses}L | Rating: ${rating} (${stats.rating_change > 0 ? '+' : ''}${stats.rating_change.toFixed(1)})`);
     

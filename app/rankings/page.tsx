@@ -118,8 +118,8 @@ export default function RankingsPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 p-8 shadow-2xl">
-          <h1 className="text-3xl font-bold text-white mb-2">?? Ranking por Categorías</h1>
-          <p className="text-blue-100">Clasificación separada por género y categoría</p>
+          <h1 className="text-3xl font-bold text-white mb-2">🏆 Ranking por Categorías</h1>
+          <p className="text-blue-100">Sistema de puntos acumulativos (máx. 500 para ascender)</p>
         </div>
 
         {/* Filters */}
@@ -198,7 +198,14 @@ export default function RankingsPage() {
                           <div className="text-lg font-bold text-blue-400">
                             {player.rating || 0}
                           </div>
-                          <div className="text-sm text-gray-400">Rating</div>
+                          <div className="text-sm text-gray-400">Puntos</div>
+                          {/* Progress bar to 500 */}
+                          <div className="w-20 h-1 bg-gray-600 rounded-full mt-1">
+                            <div 
+                              className="h-1 bg-blue-400 rounded-full transition-all"
+                              style={{ width: `${Math.min((player.rating || 0) / 5, 100)}%` }}
+                            />
+                          </div>
                         </div>
                         <div className="text-right">
                           <div className={`font-semibold ${
@@ -216,7 +223,7 @@ export default function RankingsPage() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-4xl mb-2">??</p>
+                <p className="text-4xl mb-2">🏆</p>
                 <p>No hay jugadores en esta categoría</p>
               </div>
             )}
@@ -249,21 +256,15 @@ export default function RankingsPage() {
                             </div>
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="font-bold text-blue-400">{player.rating || 0}</div>
-                            <div className="text-xs text-gray-400">Rating</div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`font-semibold text-sm ${
-                              (player.win_rate || 0) >= 60 ? 'text-green-400' :
-                              (player.win_rate || 0) >= 40 ? 'text-yellow-400' :
-                              'text-red-400'
-                            }`}>
-                              {player.win_rate || 0}%
-                            </div>
-                            <div className="text-xs text-gray-400">Victorias</div>
+                        <div className="text-right">
+                          <div className="font-bold text-blue-400">{player.rating || 0}</div>
+                          <div className="text-xs text-gray-400">Puntos</div>
+                          {/* Progress bar to 500 */}
+                          <div className="w-16 h-1 bg-gray-600 rounded-full mt-1">
+                            <div 
+                              className="h-1 bg-blue-400 rounded-full transition-all"
+                              style={{ width: `${Math.min((player.rating || 0) / 5, 100)}%` }}
+                            />
                           </div>
                         </div>
                       </div>
