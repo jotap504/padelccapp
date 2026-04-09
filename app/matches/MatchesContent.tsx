@@ -186,18 +186,26 @@ export default function MatchesContent() {
     }
   }
 
-  async function validateMatch(matchId: string) {
+  async function handleValidateMatch(matchId: string) {
     if (!user) return
     try {
-      const { data: match } = await supabase.from('matches').select('*').eq('id', matchId).single()
-      if (!match) return
-      const validatedBy = match.validated_by || []
-      if (!validatedBy.includes(user.id)) validatedBy.push(user.id)
-      const { error } = await supabase.from('matches').update({ validated_by: validatedBy, status: validatedBy.length >= 2 ? 'confirmed' : 'pending' }).eq('id', matchId)
-      if (error) console.error('Error validating match:', error)
-      else loadMatches()
-    } catch (error) {
-      console.error('Error:', error)
+      const { data: matchData } = await supabase.from('matches').select('*').eq('id', matchId).single()
+      if (!matchData) return
+      const validatedBy = matchData.validated_by || []
+      if (!validatedBy.includes(user.id)) {
+        validatedBy.push(user.id)
+      }
+      const { error } = await supabase.from('matches').update({ 
+        validated_by: validatedBy, 
+        status: validatedBy.length >= 2 ? 'confirmed' : 'pending' 
+      }).eq('id', matchId)
+      if (error) {
+        console.error('Error validating match:', error)
+      } else {
+        loadMatches()
+      }
+    } catch (err) {
+      console.error('Error:', err)
     }
   }
 
@@ -429,7 +437,7 @@ export default function MatchesContent() {
                 <div className="flex gap-2 mt-2">
                   {match.status === 'pending' && !match.validated_by?.includes(user?.id || '') && (
                     <button
-                      onClick={() => validateMatch(match.id)}
+                      onClick={() => handleValidateMatch(match.id)}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                     >
                       Validar
