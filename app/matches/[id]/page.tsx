@@ -106,6 +106,13 @@ export default function MatchDetailsPage() {
   const winner = calculateWinner()
   const isValidated = match.validated_by?.length >= 2
 
+  // Verificar si el usuario puede cargar resultado (es participante o admin)
+  const canLoadResult = user && (
+    user.role === 'admin' ||
+    match.team_a?.some(p => p.user_id === user.id) ||
+    match.team_b?.some(p => p.user_id === user.id)
+  )
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -235,12 +242,21 @@ export default function MatchDetailsPage() {
             ← Volver a Partidos
           </Link>
           
-          {match.status === 'confirmed' && (!match.sets || match.sets.length === 0) && (
+          {canLoadResult && match.status === 'pending' && (
+            <Link 
+              href={`/matches/${match.id}/edit`}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              📝 Cargar Resultado
+            </Link>
+          )}
+          
+          {canLoadResult && match.status === 'confirmed' && (
             <Link 
               href={`/matches/${match.id}/edit`}
               className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
             >
-              Editar Resultado
+              ✏️ Editar Resultado
             </Link>
           )}
         </div>
