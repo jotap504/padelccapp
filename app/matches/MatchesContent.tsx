@@ -348,7 +348,7 @@ export default function MatchesContent() {
 
             {message && (
               <div className={`mt-4 p-3 rounded-lg ${
-                message.includes('exitosamente') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                typeof message === 'string' && message.includes('exitosamente') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
               }`}>
                 {message}
               </div>
