@@ -28,11 +28,11 @@ export default function EditMatchPage() {
 
   const matchId = params?.id as string
 
-  // Estado para los sets
-  const [sets, setSets] = useState<Array<{ team_a: number; team_b: number }>>([
-    { team_a: 0, team_b: 0 },
-    { team_a: 0, team_b: 0 },
-    { team_a: 0, team_b: 0 }
+  // Estado para los sets (null = vacío, más fácil para el UX)
+  const [sets, setSets] = useState<Array<{ team_a: number | null; team_b: number | null }>>([
+    { team_a: null, team_b: null },
+    { team_a: null, team_b: null },
+    { team_a: null, team_b: null }
   ])
 
   useEffect(() => {
@@ -60,9 +60,14 @@ export default function EditMatchPage() {
         setError('Partido no encontrado')
       } else {
         setMatch(data)
-        // Si ya hay sets, cargarlos
+        // Si ya hay sets, cargarlos (asegurar que siempre haya 3 sets)
         if (data.sets && data.sets.length > 0) {
-          setSets(data.sets)
+          const loadedSets = [...data.sets]
+          // Completar hasta 3 sets si faltan
+          while (loadedSets.length < 3) {
+            loadedSets.push({ team_a: 0, team_b: 0 })
+          }
+          setSets(loadedSets)
         }
       }
     } catch (err) {
@@ -73,7 +78,7 @@ export default function EditMatchPage() {
     }
   }
 
-  function updateSet(index: number, team: 'a' | 'b', value: number) {
+  function updateSet(index: number, team: 'a' | 'b', value: number | null) {
     const newSets = [...sets]
     newSets[index] = {
       ...newSets[index],
@@ -82,16 +87,51 @@ export default function EditMatchPage() {
     setSets(newSets)
   }
 
+  // Validar puntuación de tenis
+  function isValidTennisSet(gamesA: number | null, gamesB: number | null): boolean {
+    if (gamesA === null || gamesB === null) return true // Vacío es válido
+    
+    const a = gamesA
+    const b = gamesB
+    
+    // Set normal: ganar 6 con diferencia de 2
+    if (a === 6 && b <= 4) return true
+    if (b === 6 && a <= 4) return true
+    
+    // 7-5 o 7-6 (tiebreak)
+    if (a === 7 && (b === 5 || b === 6)) return true
+    if (b === 7 && (a === 5 || a === 6)) return true
+    
+    return false
+  }
+
+  function getSetError(gamesA: number | null, gamesB: number | null): string | null {
+    if (gamesA === null || gamesB === null) return null
+    if (!isValidTennisSet(gamesA, gamesB)) {
+      return 'Puntuación inválida. Válido: 6-0 a 6-4, 7-5, 7-6'
+    }
+    return null
+  }
+
   async function saveResult() {
     if (!match || !user) return
 
     setSaving(true)
     try {
+      // Agregar ID del usuario a validated_by (si no está ya)
+      const currentValidated = match.validated_by || []
+      const newValidated = currentValidated.includes(user.id) 
+        ? currentValidated 
+        : [...currentValidated, user.id]
+
       const { error } = await supabase
         .from('matches')
         .update({
-          sets: sets.filter(s => s.team_a > 0 || s.team_b > 0),
-          status: 'confirmed'
+          sets: sets
+            .filter(s => (s.team_a ?? 0) > 0 || (s.team_b ?? 0) > 0)
+            .map(s => ({ team_a: s.team_a ?? 0, team_b: s.team_b ?? 0 })),
+          validated_by: newValidated,
+          status: newValidated.length >= 2 ? 'confirmed' : 'pending'
         })
         .eq('id', matchId)
 
@@ -114,8 +154,10 @@ export default function EditMatchPage() {
     let teamBSets = 0
     
     sets.forEach(set => {
-      if (set.team_a > set.team_b) teamASets++
-      else if (set.team_b > set.team_a) teamBSets++
+      const a = set.team_a ?? 0
+      const b = set.team_b ?? 0
+      if (a > b) teamASets++
+      else if (b > a) teamBSets++
     })
     
     if (teamASets >= 2) return 'A'
@@ -195,8 +237,12 @@ export default function EditMatchPage() {
                     type="number"
                     min="0"
                     max="7"
-                    value={set.team_a}
-                    onChange={(e) => updateSet(index, 'a', parseInt(e.target.value) || 0)}
+                    value={set.team_a ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      updateSet(index, 'a', val === '' ? null : parseInt(val))
+                    }}
+                    onFocus={(e) => e.target.select()}
                     className="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-center focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -208,12 +254,19 @@ export default function EditMatchPage() {
                     type="number"
                     min="0"
                     max="7"
-                    value={set.team_b}
-                    onChange={(e) => updateSet(index, 'b', parseInt(e.target.value) || 0)}
+                    value={set.team_b ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      updateSet(index, 'b', val === '' ? null : parseInt(val))
+                    }}
+                    onFocus={(e) => e.target.select()}
                     className="w-20 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-center focus:ring-2 focus:ring-red-500"
                   />
                   <span className="text-red-400 text-sm">B</span>
                 </div>
+                {getSetError(set.team_a, set.team_b) && (
+                  <span className="text-red-400 text-xs">{getSetError(set.team_a, set.team_b)}</span>
+                )}
               </div>
             ))}
           </div>

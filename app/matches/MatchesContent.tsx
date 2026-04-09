@@ -146,12 +146,9 @@ export default function MatchesContent() {
         ? [{ user_id: opponent1, name: players.find(p => p.id === opponent1)?.name }, { user_id: opponent2, name: players.find(p => p.id === opponent2)?.name }]
         : [{ user_id: user.id, name: user.name }, { user_id: myPartner, name: players.find(p => p.id === myPartner)?.name }]
 
-      // Forzar club_id si es null (solución temporal)
-      const forcedClubId = user.club_id || '67a5b532-879c-4ae0-9b79-68f50d2f12e3'
-      
       // Debug: log de los datos que se envían
       const matchData = {
-        club_id: forcedClubId,
+        club_id: user.club_id,
         date: matchDate,
         status: 'pending',
         team_a: teamA,
@@ -163,7 +160,6 @@ export default function MatchesContent() {
       console.log('Creating match with data:', matchData)
       console.log('User:', user)
       console.log('User club_id:', user.club_id)
-      console.log('Forced club_id:', forcedClubId)
       console.log('User id:', user.id)
       console.log('User member_number:', user.member_number)
 
