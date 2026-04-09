@@ -52,7 +52,7 @@ export default function MatchesContent() {
   const [matchDate, setMatchDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [format, setFormat] = useState<'3' | '5'>('3')
   const [creating, setCreating] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<string | React.ReactNode>('')
 
   useEffect(() => {
     if (isLoading) return
@@ -119,6 +119,21 @@ export default function MatchesContent() {
       return
     }
 
+    if (!user.club_id) {
+      setMessage(
+        <div className="space-y-2">
+          <p>Error: Sesión sin club_id. Necesitás cerrar sesión y volver a entrar.</p>
+          <button 
+            onClick={() => { localStorage.removeItem('padel_session'); window.location.href = '/login'; }}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Cerrar sesión y reintentar
+          </button>
+        </div>
+      )
+      return
+    }
+
     setCreating(true)
     setMessage('')
 
@@ -131,21 +146,34 @@ export default function MatchesContent() {
         ? [{ user_id: opponent1, name: players.find(p => p.id === opponent1)?.name }, { user_id: opponent2, name: players.find(p => p.id === opponent2)?.name }]
         : [{ user_id: user.id, name: user.name }, { user_id: myPartner, name: players.find(p => p.id === myPartner)?.name }]
 
+      // Forzar club_id si es null (solución temporal)
+      const forcedClubId = user.club_id || '67a5b532-879c-4ae0-9b79-68f50d2f12e3'
+      
+      // Debug: log de los datos que se envían
+      const matchData = {
+        club_id: forcedClubId,
+        date: matchDate,
+        status: 'pending',
+        team_a: teamA,
+        team_b: teamB,
+        sets: [],
+        validated_by: [user.id],
+        created_by: user.id
+      }
+      console.log('Creating match with data:', matchData)
+      console.log('User:', user)
+      console.log('User club_id:', user.club_id)
+      console.log('Forced club_id:', forcedClubId)
+      console.log('User id:', user.id)
+      console.log('User member_number:', user.member_number)
+
       const { data, error } = await supabase
         .from('matches')
-        .insert({
-          date: matchDate,
-          status: 'pending',
-          team_a: teamA,
-          team_b: teamB,
-          sets: [],
-          validated_by: [user.id],
-          created_by: user.id
-        })
+        .insert(matchData)
 
       if (error) {
         console.error('Error creating match:', error)
-        setMessage('Error al crear el partido')
+        setMessage(`Error al crear el partido: ${error.message} (code: ${error.code})`)
       } else {
         setMessage('¡Partido creado exitosamente!')
         setShowCreateForm(false)
