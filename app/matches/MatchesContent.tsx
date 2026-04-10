@@ -383,7 +383,8 @@ export default function MatchesContent() {
                       </div>
                       
                       <div className="flex gap-2 ml-4">
-                        {match.status === 'pending' && match.sets && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0) && (
+                        {/* Cargar Resultado - solo si no hay resultado guardado y esta pendiente */}
+                        {match.status === 'pending' && (!match.sets || !match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0)) && (
                           <button
                             onClick={() => window.location.href = `/matches/${match.id}/edit`}
                             className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
@@ -391,6 +392,16 @@ export default function MatchesContent() {
                             Cargar Resultado
                           </button>
                         )}
+                        {/* Editar Resultado - solo si hay resultado, esta pendiente, y el usuario puede editar */}
+                        {match.status === 'pending' && match.sets && match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0) && (
+                          <button
+                            onClick={() => window.location.href = `/matches/${match.id}/edit`}
+                            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                          >
+                            Editar Resultado
+                          </button>
+                        )}
+                        {/* Registrar Resultado - si esta confirmado pero sin resultado (caso raro) */}
                         {match.status === 'confirmed' && (!match.sets || !match.sets.some((s: any) => s.team_a > 0 || s.team_b > 0)) && (
                           <button
                             onClick={() => window.location.href = `/matches/${match.id}/edit`}

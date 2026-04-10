@@ -60,6 +60,17 @@ export default function EditMatchPage() {
         console.error('Error loading match:', error)
         setError('Partido no encontrado')
       } else {
+        // Verificar si el partido ya esta confirmado
+        if (data.status === 'confirmed') {
+          setError('Este partido ya esta confirmado y no puede editarse')
+          // Redirigir a detalles despues de 3 segundos
+          setTimeout(() => {
+            router.push(`/matches/${matchId}`)
+          }, 3000)
+          setMatch(data)
+          return
+        }
+        
         setMatch(data)
         // Si ya hay sets, cargarlos (asegurar que siempre haya 3 sets)
         if (data.sets && data.sets.length > 0) {
