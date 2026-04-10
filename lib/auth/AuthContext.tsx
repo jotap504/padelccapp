@@ -39,6 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const session = localStorage.getItem('padel_session')
       if (session) {
         const parsed = JSON.parse(session)
+        // Validar que el ID no sea un placeholder
+        if (parsed.user?.id === '11111111-1111-1111-1111-111111111111') {
+          console.error('Sesión corrupta detectada, limpiando...')
+          localStorage.removeItem('padel_session')
+          setUser(null)
+          return
+        }
         if (parsed.expires_at > Date.now()) {
           setUser(parsed.user)
         } else {
