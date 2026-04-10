@@ -151,6 +151,14 @@ export default function EditMatchPage() {
         console.error('Error saving result:', error)
         setError('Error al guardar el resultado')
       } else {
+        // Si el partido fue confirmado, recalcular ranking
+        if (newValidated.length >= 2) {
+          try {
+            await fetch('/api/recalculate-ranking', { method: 'POST' })
+          } catch (err) {
+            console.error('Error recalculating ranking:', err)
+          }
+        }
         router.push(`/matches/${matchId}`)
       }
     } catch (err) {
