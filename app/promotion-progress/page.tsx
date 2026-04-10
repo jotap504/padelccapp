@@ -65,6 +65,13 @@ export default function PromotionProgressPage() {
 
   async function loadProgress() {
     try {
+      // Validar que el user.id no sea un placeholder
+      if (!user?.id || user.id === '11111111-1111-1111-1111-111111111111') {
+        setError('Error: Sesión inválida. Por favor cerrá sesión y volvé a ingresar.')
+        setLoading(false)
+        return
+      }
+
       // Obtener puntos actuales del jugador
       const { data: playerData, error: playerError } = await supabase
         .from('player_category_points')
