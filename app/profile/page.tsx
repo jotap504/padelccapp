@@ -7,14 +7,14 @@ import { supabase } from '@/lib/supabase/client'
 import MainLayout from '@/app/components/MainLayout'
 
 const CATEGORIES = [
-  { value: 1, label: '1ra (1400 pts)', rating: 1400 },
-  { value: 2, label: '2da (1250 pts)', rating: 1250 },
-  { value: 3, label: '3ra (1100 pts)', rating: 1100 },
-  { value: 4, label: '4ta (950 pts)', rating: 950 },
-  { value: 5, label: '5ta (850 pts)', rating: 850 },
-  { value: 6, label: '6ta (750 pts)', rating: 750 },
-  { value: 7, label: '7ma (650 pts)', rating: 650 },
-  { value: 8, label: '8va (550 pts)', rating: 550 },
+  { value: 1, label: '1ra' },
+  { value: 2, label: '2da' },
+  { value: 3, label: '3ra' },
+  { value: 4, label: '4ta' },
+  { value: 5, label: '5ta' },
+  { value: 6, label: '6ta' },
+  { value: 7, label: '7ma' },
+  { value: 8, label: '8va' },
 ]
 
 const HANDEDNESS = [
@@ -102,14 +102,12 @@ export default function ProfilePage() {
     
     try {
       const selectedCategory = parseInt(category)
-      const selectedRating = CATEGORIES.find(c => c.value === selectedCategory)?.rating || 750
       
       const { error } = await supabase
         .from('users')
         .update({
           initial_category: selectedCategory,
           category: selectedCategory,
-          rating: selectedRating,
           email: email || null,
           whatsapp_phone: whatsappPhone || null,
           handedness,
