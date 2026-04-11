@@ -34,7 +34,7 @@ export default function MatchesContent() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [showOnlyMyMatches, setShowOnlyMyMatches] = useState(true)
+  const [showOnlyMyMatches, setShowOnlyMyMatches] = useState(false)
   
   useEffect(() => {
     const shouldCreate = searchParams.get('create')
