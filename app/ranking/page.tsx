@@ -134,7 +134,7 @@ export default function RankingPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Nombre o número de socio..."
-              className="block w-full rounded-md border-gray-300 text-sm"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -142,7 +142,7 @@ export default function RankingPage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="block w-full rounded-md border-gray-300 text-sm"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {CATEGORIES.map(cat => (
                 <option key={cat.value} value={cat.value}>{cat.label}</option>
