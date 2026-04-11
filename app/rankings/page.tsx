@@ -38,9 +38,11 @@ export default function RankingsPage() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading } = useAuth()
   const [rankings, setRankings] = useState<RankingUser[]>([])
+  const [filteredRankings, setFilteredRankings] = useState<RankingUser[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedGender, setSelectedGender] = useState('all')
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     if (isLoading) return
@@ -50,6 +52,10 @@ export default function RankingsPage() {
     }
     loadRankings()
   }, [isLoading, isAuthenticated, router, selectedGender, selectedCategory])
+
+  useEffect(() => {
+    filterRankings()
+  }, [rankings, searchTerm, selectedGender, selectedCategory])
 
   async function loadRankings() {
     try {
@@ -63,10 +69,9 @@ export default function RankingsPage() {
 
       // Aplicar filtros
       if (selectedGender !== 'all') {
-        // Por ahora, asumimos que el campo gender existe o lo agregaremos después
         query = query.eq('gender', selectedGender)
       }
-      
+
       if (selectedCategory !== null) {
         query = query.eq('category', selectedCategory)
       }
@@ -87,8 +92,32 @@ export default function RankingsPage() {
     }
   }
 
+  function filterRankings() {
+    let filtered = [...rankings]
+
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(term)
+      )
+    }
+
+    // Filter by gender
+    if (selectedGender !== 'all') {
+      filtered = filtered.filter(p => p.gender === selectedGender)
+    }
+
+    // Filter by category
+    if (selectedCategory !== null) {
+      filtered = filtered.filter(p => p.category === selectedCategory)
+    }
+
+    setFilteredRankings(filtered)
+  }
+
   function getTopThreeByCategory(category: number, gender: string = 'all') {
-    return rankings
+    return filteredRankings
       .filter(player => player.category === category)
       .filter(player => gender === 'all' || player.gender === gender)
       .slice(0, 3)
@@ -124,7 +153,19 @@ export default function RankingsPage() {
 
         {/* Filters */}
         <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Buscar jugador</label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Nombre del jugador..."
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+              />
+            </div>
+
             {/* Gender Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Género</label>
@@ -167,10 +208,10 @@ export default function RankingsPage() {
             <h2 className="text-xl font-bold text-white mb-4">
               {CATEGORIES.find(c => c.value === selectedCategory)?.label} - {GENDERS.find(g => g.value === selectedGender)?.label}
             </h2>
-            
-            {rankings.filter(player => player.category === selectedCategory).length > 0 ? (
+
+            {filteredRankings.filter(player => player.category === selectedCategory).length > 0 ? (
               <div className="space-y-3">
-                {rankings
+                {filteredRankings
                   .filter(player => player.category === selectedCategory)
                   .map((player, index) => (
                     <div key={player.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg hover:bg-gray-700/70 transition-colors">
