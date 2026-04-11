@@ -123,7 +123,7 @@ export default function AllMatchesPage() {
     setFilteredMatches(filtered)
   }
 
-  const categories = Array.from(new Set(matches.map(m => m.category))).sort((a, b) => a - b)
+  const categories = Array.from(new Set(matches.map(m => m.category).filter((c): c is number => c !== undefined))).sort((a, b) => a - b)
   const clubs = Array.from(new Set(players.map(p => p.club_id)))
 
   if (loading) {
