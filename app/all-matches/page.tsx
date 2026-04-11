@@ -53,30 +53,17 @@ export default function AllMatchesPage() {
 
   async function loadData() {
     try {
-      // Load all matches with player data
+      // Load all matches without relations first
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
-        .select(`
-          *,
-          player1:player1_id(name, member_number, category, rating, club_id, gender),
-          player2:player2_id(name, member_number, category, rating, club_id, gender)
-        `)
+        .select('*')
         .order('date', { ascending: false })
         .limit(100)
 
       if (matchesError) throw matchesError
 
       if (matchesData) {
-        const formattedMatches = matchesData.map((m: any) => ({
-          ...m,
-          player1_name: m.player1?.name || 'Desconocido',
-          player2_name: m.player2?.name || 'Desconocido',
-          player1_gender: m.player1?.gender,
-          player2_gender: m.player2?.gender,
-          player1_club_id: m.player1?.club_id,
-          player2_club_id: m.player2?.club_id
-        }))
-        setMatches(formattedMatches)
+        setMatches(matchesData)
       }
 
       // Load all players for filters
@@ -100,31 +87,40 @@ export default function AllMatchesPage() {
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(m =>
-        m.player1_name.toLowerCase().includes(term) ||
-        m.player2_name.toLowerCase().includes(term) ||
-        m.player1_name.toLowerCase().includes(term) ||
-        m.player2_name.toLowerCase().includes(term)
-      )
+      filtered = filtered.filter(m => {
+        const teamA = m.team_a || []
+        const teamB = m.team_b || []
+        const allPlayers = [...teamA, ...teamB]
+        return allPlayers.some(p => p.name?.toLowerCase().includes(term))
+      })
     }
 
     if (categoryFilter !== 'all') {
       const cat = parseInt(categoryFilter)
-      filtered = filtered.filter(m => m.category === cat)
+      filtered = filtered.filter(m => {
+        const teamA = m.team_a || []
+        const teamB = m.team_b || []
+        const allPlayers = [...teamA, ...teamB]
+        return allPlayers.some(p => p.category === cat)
+      })
     }
 
     if (genderFilter !== 'all') {
-      filtered = filtered.filter(m =>
-        (m as any).player1_gender === genderFilter ||
-        (m as any).player2_gender === genderFilter
-      )
+      filtered = filtered.filter(m => {
+        const teamA = m.team_a || []
+        const teamB = m.team_b || []
+        const allPlayers = [...teamA, ...teamB]
+        return allPlayers.some(p => p.gender === genderFilter)
+      })
     }
 
     if (clubFilter !== 'all') {
-      filtered = filtered.filter(m =>
-        (m as any).player1_club_id === clubFilter ||
-        (m as any).player2_club_id === clubFilter
-      )
+      filtered = filtered.filter(m => {
+        const teamA = m.team_a || []
+        const teamB = m.team_b || []
+        const allPlayers = [...teamA, ...teamB]
+        return allPlayers.some(p => p.club_id === clubFilter)
+      })
     }
 
     setFilteredMatches(filtered)
@@ -251,9 +247,15 @@ export default function AllMatchesPage() {
           {filteredMatches.length > 0 ? (
             <div className="space-y-4">
               {filteredMatches.map((match) => {
-                const isPlayer1Winner = match.winner_id === match.player1_id
-                const isPlayer2Winner = match.winner_id === match.player2_id
+                const teamA = match.team_a || []
+                const teamB = match.team_b || []
+                const teamANames = teamA.map((p: any) => p.name).join(' & ')
+                const teamBNames = teamB.map((p: any) => p.name).join(' & ')
                 const isCompleted = match.status === 'completed'
+
+                // Calculate scores from sets
+                const teamAScore = match.sets?.filter((s: any) => s.team_a > s.team_b).length || 0
+                const teamBScore = match.sets?.filter((s: any) => s.team_b > s.team_a).length || 0
 
                 return (
                   <div
@@ -263,19 +265,19 @@ export default function AllMatchesPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-2">
-                          <div className={`flex-1 ${isPlayer1Winner && isCompleted ? 'text-green-400 font-bold' : ''}`}>
-                            <div className="text-lg font-semibold text-white">{match.player1_name}</div>
+                          <div className={`flex-1 ${teamAScore > teamBScore && isCompleted ? 'text-green-400 font-bold' : ''}`}>
+                            <div className="text-lg font-semibold text-white">{teamANames || 'Equipo A'}</div>
                             <div className="text-sm text-gray-400">
-                              {match.category}° • {(match as any).player1_gender === 'male' ? 'M' : (match as any).player1_gender === 'female' ? 'F' : 'O'}
+                              {teamA.map((p: any) => `${p.category}° ${p.gender === 'male' ? 'M' : p.gender === 'female' ? 'F' : 'O'}`).join(', ')}
                             </div>
                           </div>
                           <div className="text-2xl font-bold text-gray-400">
-                            {match.player1_score} - {match.player2_score}
+                            {teamAScore} - {teamBScore}
                           </div>
-                          <div className={`flex-1 text-right ${isPlayer2Winner && isCompleted ? 'text-green-400 font-bold' : ''}`}>
-                            <div className="text-lg font-semibold text-white">{match.player2_name}</div>
+                          <div className={`flex-1 text-right ${teamBScore > teamAScore && isCompleted ? 'text-green-400 font-bold' : ''}`}>
+                            <div className="text-lg font-semibold text-white">{teamBNames || 'Equipo B'}</div>
                             <div className="text-sm text-gray-400">
-                              {match.category}° • {(match as any).player2_gender === 'male' ? 'M' : (match as any).player2_gender === 'female' ? 'F' : 'O'}
+                              {teamB.map((p: any) => `${p.category}° ${p.gender === 'male' ? 'M' : p.gender === 'female' ? 'F' : 'O'}`).join(', ')}
                             </div>
                           </div>
                         </div>
