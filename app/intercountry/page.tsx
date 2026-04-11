@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import Header from '@/app/components/Header'
+import MainLayout from '@/app/components/MainLayout'
 
 interface IntercountryTournament {
   id: string
@@ -164,70 +164,81 @@ export default function IntercountryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header title="Intercountrys" />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <p>Cargando...</p>
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title="Intercountrys" />
+    <MainLayout>
+      <div className="space-y-8">
+        {/* Welcome Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 p-8 shadow-2xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.03%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+          <div className="relative z-10">
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              🏆 Torneos Intercountry
+            </h1>
+            <p className="text-purple-100 text-lg">
+              Competiciones entre clubes de diferentes regiones
+            </p>
+          </div>
+        </div>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Admin Create Button */}
         {isAdmin && (
           <div className="mb-6">
             {!showCreateForm ? (
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-105"
               >
                 + Crear Liga Intercountry
               </button>
             ) : (
-              <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <h3 className="text-lg font-semibold mb-4">Nueva Liga Intercountry</h3>
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 mb-6 shadow-xl">
+                <h3 className="text-lg font-semibold mb-4 text-white">Nueva Liga Intercountry</h3>
                 <form onSubmit={handleCreateTournament} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Nombre</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full border rounded px-3 py-2"
+                      className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Descripción</label>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full border rounded px-3 py-2"
+                      className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       rows={2}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Temporada</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Temporada</label>
                       <input
                         type="number"
                         value={formData.season}
                         onChange={(e) => setFormData({ ...formData, season: parseInt(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Categoría</label>
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: parseInt(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         {[1,2,3,4,5,6,7,8,9].map(cat => (
                           <option key={cat} value={cat}>{cat}°</option>
@@ -237,11 +248,11 @@ export default function IntercountryPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Género</label>
                       <select
                         value={formData.gender}
                         onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'male' | 'female' | 'mixed' })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="male">Masculino</option>
                         <option value="female">Femenino</option>
@@ -249,11 +260,11 @@ export default function IntercountryPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Tipo</label>
                       <select
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="league">Liga</option>
                         <option value="cup">Copa</option>
@@ -263,22 +274,22 @@ export default function IntercountryPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Fecha Inicio</label>
                       <input
                         type="date"
                         value={formData.start_date}
                         onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cierre Inscripción</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Cierre Inscripción</label>
                       <input
                         type="date"
                         value={formData.registration_deadline}
                         onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-600 rounded-lg px-4 py-2 bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -286,14 +297,14 @@ export default function IntercountryPage() {
                     <button
                       type="submit"
                       disabled={creating}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                      className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 transition-all duration-300"
                     >
                       {creating ? 'Creando...' : 'Crear Liga'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowCreateForm(false)}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
                     >
                       Cancelar
                     </button>
@@ -306,7 +317,9 @@ export default function IntercountryPage() {
 
         {/* Active Tournaments */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Torneos Activos</h2>
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span>⚡</span> Torneos Activos
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tournaments
               .filter(t => t.status !== 'finished')
@@ -314,46 +327,59 @@ export default function IntercountryPage() {
                 <div
                   key={tournament.id}
                   onClick={() => router.push(`/intercountry/${tournament.id}`)}
-                  className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                  className="group relative overflow-hidden rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-6 cursor-pointer hover:border-purple-500 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/20"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${STATUS_COLORS[tournament.status]}`}>
-                      {STATUS_LABELS[tournament.status]}
-                    </span>
-                    <span className="text-sm text-gray-500">{tournament.season}</span>
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{tournament.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{tournament.description}</p>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Tipo:</span>
-                      <span className="font-medium">{TYPE_LABELS[tournament.type]}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Categoría:</span>
-                      <span className="font-medium">{tournament.category}°</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Inicio:</span>
-                      <span className="font-medium">
-                        {new Date(tournament.start_date).toLocaleDateString('es-AR')}
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-700 opacity-10 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform duration-500"></div>
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        tournament.status === 'draft' ? 'bg-gray-500/20 text-gray-300 border border-gray-500/30' :
+                        tournament.status === 'registration' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                        tournament.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                        'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                      }`}>
+                        {STATUS_LABELS[tournament.status]}
                       </span>
+                      <span className="text-sm text-gray-400">{tournament.season}</span>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">{tournament.name}</h3>
+                    <p className="text-sm text-gray-400 mb-4 line-clamp-2">{tournament.description}</p>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Tipo:</span>
+                        <span className="font-medium text-gray-300">{TYPE_LABELS[tournament.type]}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Categoría:</span>
+                        <span className="font-medium text-gray-300">{tournament.category}°</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Inicio:</span>
+                        <span className="font-medium text-gray-300">
+                          {new Date(tournament.start_date).toLocaleDateString('es-AR')}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
           </div>
-          
+
           {tournaments.filter(t => t.status !== 'finished').length === 0 && (
-            <p className="text-gray-500 text-center py-8">No hay torneos activos</p>
+            <div className="text-center py-8 text-gray-500 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl">
+              <p className="text-4xl mb-2">🏆</p>
+              <p>No hay torneos activos</p>
+            </div>
           )}
         </div>
 
         {/* Finished Tournaments */}
         <div>
-          <h2 className="text-lg font-semibold mb-4">Torneos Finalizados</h2>
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span>🏅</span> Torneos Finalizados
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tournaments
               .filter(t => t.status === 'finished')
@@ -361,25 +387,25 @@ export default function IntercountryPage() {
                 <div
                   key={tournament.id}
                   onClick={() => router.push(`/intercountry/${tournament.id}`)}
-                  className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow opacity-75"
+                  className="group relative overflow-hidden rounded-xl bg-gray-800/30 backdrop-blur-sm border border-gray-700 p-6 cursor-pointer hover:border-purple-500/50 transition-all duration-300 hover:scale-[1.02] opacity-75"
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30">
                       Finalizado
                     </span>
-                    <span className="text-sm text-gray-500">{tournament.season}</span>
+                    <span className="text-sm text-gray-400">{tournament.season}</span>
                   </div>
-                  
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{tournament.name}</h3>
-                  
+
+                  <h3 className="text-lg font-bold text-gray-300 mb-2 group-hover:text-purple-400 transition-colors">{tournament.name}</h3>
+
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Tipo:</span>
-                      <span className="font-medium">{TYPE_LABELS[tournament.type]}</span>
+                      <span className="font-medium text-gray-400">{TYPE_LABELS[tournament.type]}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Categoría:</span>
-                      <span className="font-medium">{tournament.category}°</span>
+                      <span className="font-medium text-gray-400">{tournament.category}°</span>
                     </div>
                   </div>
                 </div>
@@ -387,6 +413,7 @@ export default function IntercountryPage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </MainLayout>
   )
 }
