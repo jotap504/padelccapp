@@ -248,7 +248,7 @@ export default function AllMatchesPage() {
                 const teamB = match.team_b || []
                 const teamANames = teamA.map((p: any) => p.name).join(' & ')
                 const teamBNames = teamB.map((p: any) => p.name).join(' & ')
-                const isCompleted = match.status === 'completed'
+                const isCompleted = match.status === 'confirmed'
 
                 // Calculate scores from sets
                 const teamAScore = match.sets?.filter((s: any) => s.team_a > s.team_b).length || 0
@@ -290,9 +290,13 @@ export default function AllMatchesPage() {
                         </div>
                       </div>
                       <div className="ml-4">
-                        {isCompleted ? (
+                        {match.status === 'confirmed' ? (
                           <span className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm">
-                            Finalizado
+                            Confirmado
+                          </span>
+                        ) : match.status === 'disputed' ? (
+                          <span className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-sm">
+                            Disputado
                           </span>
                         ) : (
                           <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full text-sm">
