@@ -7,17 +7,14 @@ import { supabase } from '@/lib/supabase/client'
 
 interface Match {
   id: string
-  player1_id: string
-  player2_id: string
-  player1_name: string
-  player2_name: string
-  player1_score: number
-  player2_score: number
-  winner_id: string | null
+  team_a: any[]
+  team_b: any[]
+  sets: any[]
   date: string
-  category: number
-  court_id: string | null
   status: string
+  validated_by: string[] | null
+  created_by: string
+  category?: number
 }
 
 interface Player {
@@ -101,7 +98,7 @@ export default function AllMatchesPage() {
         const teamA = m.team_a || []
         const teamB = m.team_b || []
         const allPlayers = [...teamA, ...teamB]
-        return allPlayers.some(p => p.category === cat)
+        return allPlayers.some(p => p.category === cat) || m.category === cat
       })
     }
 
