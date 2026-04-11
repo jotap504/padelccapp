@@ -34,7 +34,7 @@ export default function MatchesContent() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [showOnlyMyMatches, setShowOnlyMyMatches] = useState(false)
+  const [showOnlyMyMatches, setShowOnlyMyMatches] = useState(true)
   
   useEffect(() => {
     const shouldCreate = searchParams.get('create')
@@ -199,7 +199,7 @@ export default function MatchesContent() {
     <MainLayout>
       <div className="space-y-6">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 p-8 shadow-2xl">
-          <h1 className="text-3xl font-bold text-white mb-2">Partidos</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Mis Partidos</h1>
           <p className="text-blue-100">Gestiona tus partidos y resultados</p>
         </div>
 
@@ -209,12 +209,6 @@ export default function MatchesContent() {
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             {showCreateForm ? 'Cancelar' : 'Crear Partido'}
-          </button>
-          <button
-            onClick={() => setShowOnlyMyMatches(!showOnlyMyMatches)}
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            {showOnlyMyMatches ? 'Todos los partidos' : 'Mis partidos'}
           </button>
         </div>
 

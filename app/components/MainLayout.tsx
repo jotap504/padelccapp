@@ -17,7 +17,7 @@ interface NavItem {
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
-  const [expandedSections, setExpandedSections] = useState<string[]>(['matches'])
+  const [expandedSections, setExpandedSections] = useState<string[]>(['my-matches'])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -37,14 +37,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const navigation: NavItem[] = [
     {
-      id: 'matches',
-      label: 'Partidos',
+      id: 'my-matches',
+      label: 'Mis Partidos',
       icon: '🏓',
       children: [
-        { id: 'my-matches', label: 'Mis Partidos', href: '/matches', icon: '🏓' },
-        { id: 'create-match', label: 'Crear Partido', href: '/matches?create=true', icon: '➕' },
+        { id: 'matches', label: 'Mis Partidos', href: '/matches', icon: '🏓' },
         { id: 'promotion-progress', label: 'Progreso de Ascenso', href: '/promotion-progress', icon: '📈' }
       ]
+    },
+    {
+      id: 'all-matches',
+      label: 'Todos los Partidos',
+      icon: '🎾',
+      href: '/all-matches'
     },
     {
       id: 'tournaments',
