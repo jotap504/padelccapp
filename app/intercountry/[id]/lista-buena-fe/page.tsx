@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import Header from '@/app/components/Header'
+import MainLayout from '@/app/components/MainLayout'
+import Link from 'next/link'
 
 interface Player {
   id: string
@@ -167,26 +168,24 @@ export default function ListaBuenaFePage({ params }: { params: { id: string } })
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header title="Lista de Buena Fe" />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <p>Cargando...</p>
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   if (!isAdmin && !isCaptain) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header title="Lista de Buena Fe" />
+      <MainLayout>
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-800">No tenés permisos para ver esta página.</p>
-            <p className="text-red-600 text-sm mt-2">Solo el capitán o un administrador pueden gestionar la lista.</p>
+          <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-6 text-center">
+            <p className="text-red-400">No tenés permisos para ver esta página.</p>
+            <p className="text-red-300 text-sm mt-2">Solo el capitán o un administrador pueden gestionar la lista.</p>
           </div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
@@ -196,40 +195,65 @@ export default function ListaBuenaFePage({ params }: { params: { id: string } })
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title={`Lista de Buena Fe - ${tournament?.name || 'Intercountry'}`} />
+    <MainLayout>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 p-8 shadow-2xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.03%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-4">
+              <Link href={`/intercountry/${params.id}`} className="text-purple-200 hover:text-white transition-colors">
+                ← Volver
+              </Link>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              📋 Lista de Buena Fe
+            </h1>
+            <p className="text-purple-100 text-lg">
+              {tournament?.name || 'Torneo Intercountry'}
+            </p>
+          </div>
+        </div>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Tournament Info */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{tournament?.name}</h1>
-          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-            <span>Temporada: {tournament?.season}</span>
-            <span>Categoría: {tournament?.category}°</span>
-            <span>Jugadores: {players.length}</span>
-            <span>Posiciones asignadas: {assignedCount}/20</span>
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 shadow-xl">
+          <div className="flex flex-wrap gap-4 text-sm text-gray-300">
+            <span className="flex items-center gap-2">
+              <span>📅</span> Temporada: {tournament?.season}
+            </span>
+            <span className="flex items-center gap-2">
+              <span>🏆</span> Categoría: {tournament?.category}°
+            </span>
+            <span className="flex items-center gap-2">
+              <span>👥</span> Jugadores: {players.length}
+            </span>
+            <span className="flex items-center gap-2">
+              <span>🔢</span> Posiciones asignadas: <span className="text-purple-400 font-bold">{assignedCount}/20</span>
+            </span>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 shadow-xl">
           <div className="flex flex-wrap gap-4 items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Asignación de Posiciones</h2>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <span>⚙️</span> Asignación de Posiciones
+              </h2>
+              <p className="text-sm text-gray-400">
                 Asigná posiciones del 1 al 20. Las posiciones 1-4 suelen ser las parejas principales.
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={autoAssignPositions}
-                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm"
+                className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-purple-800 shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-105 text-sm"
               >
                 Auto-asignar por categoría
               </button>
               <button
                 onClick={clearPositions}
-                className="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 text-sm"
+                className="bg-red-500/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg hover:bg-red-500/30 transition-colors text-sm"
               >
                 Limpiar posiciones
               </button>
@@ -238,38 +262,40 @@ export default function ListaBuenaFePage({ params }: { params: { id: string } })
         </div>
 
         {/* Players Table */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Jugadores Registrados ({players.length})</h3>
-          
+        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 shadow-xl">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span>👥</span> Jugadores Registrados ({players.length})
+          </h3>
+
           {players.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-700/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Posición</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jugador</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Socio</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Género</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Posición</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Jugador</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">N° Socio</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Categoría</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Rating</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Género</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-700">
                   {players.map((player) => (
-                    <tr 
-                      key={player.id} 
-                      className={player.position ? 'bg-blue-50' : ''}
+                    <tr
+                      key={player.id}
+                      className={player.position ? 'bg-purple-500/20' : 'hover:bg-gray-700/50 transition-colors'}
                     >
                       <td className="px-4 py-3">
                         <select
                           value={player.position || ''}
                           onChange={(e) => updatePosition(player.id, e.target.value ? parseInt(e.target.value) : null)}
-                          className="w-20 border rounded px-2 py-1 text-center"
+                          className="w-20 border border-gray-600 rounded px-2 py-1 text-center bg-gray-700 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         >
                           <option value="">-</option>
                           {Array.from({ length: 20 }, (_, i) => i + 1).map(pos => (
-                            <option 
-                              key={pos} 
+                            <option
+                              key={pos}
                               value={pos}
                               disabled={players.some(p => p.id !== player.id && p.position === pos)}
                             >
@@ -278,18 +304,18 @@ export default function ListaBuenaFePage({ params }: { params: { id: string } })
                           ))}
                         </select>
                         {player.position && player.position <= 4 && (
-                          <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                          <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-1 rounded">
                             Principal
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{player.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{player.member_number}</td>
+                      <td className="px-4 py-3 font-medium text-white">{player.name}</td>
+                      <td className="px-4 py-3 text-gray-400">{player.member_number}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-1 bg-gray-100 rounded text-sm">{player.category}°</span>
+                        <span className="px-2 py-1 bg-gray-700 rounded text-sm text-gray-300">{player.category}°</span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{player.rating || '-'}</td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-gray-400">{player.rating || '-'}</td>
+                      <td className="px-4 py-3 text-gray-400">
                         {player.gender === 'male' ? 'M' : player.gender === 'female' ? 'F' : 'O'}
                       </td>
                     </tr>
@@ -298,39 +324,42 @@ export default function ListaBuenaFePage({ params }: { params: { id: string } })
               </table>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-8">
-              No hay jugadores registrados. Primero debés seleccionar jugadores en "Gestionar Equipo".
-            </p>
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-4xl mb-2">👥</p>
+              <p>No hay jugadores registrados. Primero debés seleccionar jugadores en "Gestionar Equipo".</p>
+            </div>
           )}
         </div>
 
         {/* Positions Summary */}
         {assignedCount > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Lista Ordenada (Posiciones Asignadas)</h3>
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <span>📊</span> Lista Ordenada (Posiciones Asignadas)
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {players
                 .filter(p => p.position !== null)
                 .sort((a, b) => (a.position || 99) - (b.position || 99))
                 .map((player) => (
-                  <div 
-                    key={player.id} 
-                    className={`p-4 rounded-lg border-2 ${
-                      player.position && player.position <= 4 
-                        ? 'border-yellow-400 bg-yellow-50' 
-                        : 'border-gray-200'
+                  <div
+                    key={player.id}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                      player.position && player.position <= 4
+                        ? 'border-yellow-500/50 bg-yellow-500/10'
+                        : 'border-gray-700 bg-gray-700/30'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl font-bold text-blue-600">#{player.position}</span>
+                      <span className="text-2xl font-bold text-purple-400">#{player.position}</span>
                       {player.position && player.position <= 4 && (
-                        <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded font-bold">
+                        <span className="text-xs bg-yellow-500/30 text-yellow-400 border border-yellow-500/50 px-2 py-1 rounded font-bold">
                           PRINCIPAL
                         </span>
                       )}
                     </div>
-                    <p className="font-semibold text-gray-900">{player.name}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="font-semibold text-white">{player.name}</p>
+                    <p className="text-sm text-gray-400">
                       Cat {player.category}° • Rating {player.rating || '-'}
                     </p>
                     <p className="text-xs text-gray-500">Socio #{player.member_number}</p>
@@ -342,39 +371,39 @@ export default function ListaBuenaFePage({ params }: { params: { id: string } })
 
         {/* Available Positions */}
         {availablePositions.length > 0 && (
-          <div className="bg-gray-100 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-600">
-              <span className="font-semibold">Posiciones disponibles:</span>{' '}
-              {availablePositions.join(', ')}
+          <div className="bg-gray-700/30 border border-gray-700 rounded-xl p-4">
+            <p className="text-sm text-gray-400">
+              <span className="font-semibold text-gray-300">Posiciones disponibles:</span>{' '}
+              <span className="text-purple-400">{availablePositions.join(', ')}</span>
             </p>
           </div>
         )}
 
         {/* Save Actions */}
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <button
             onClick={savePositions}
             disabled={saving || players.length === 0}
-            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
+            className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-105 font-medium"
           >
             {saving ? 'Guardando...' : 'Guardar Posiciones'}
           </button>
-          
+
           <button
             onClick={() => router.push(`/intercountry/${params.id}/manage`)}
-            className="bg-gray-300 text-gray-700 px-6 py-3 rounded hover:bg-gray-400 font-medium"
+            className="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors font-medium"
           >
             Volver a Gestión de Equipo
           </button>
 
           <button
             onClick={() => router.push(`/intercountry/${params.id}`)}
-            className="bg-gray-300 text-gray-700 px-6 py-3 rounded hover:bg-gray-400 font-medium"
+            className="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors font-medium"
           >
             Volver al Torneo
           </button>
         </div>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   )
 }
