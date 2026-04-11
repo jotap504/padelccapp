@@ -102,7 +102,7 @@ export default function IntercountryDetailPage() {
     // Load fixtures
     const { data: fixturesData } = await supabase
       .from('intercountry_fixtures')
-      .select('*, home_club:clubs!home_club_id(name), away_club:clubs!away_club_id(name)')
+      .select('*, home_club:clubs!home_club_id(*), away_club:clubs!away_club_id(*)')
       .eq('tournament_id', id)
       .order('round', { ascending: true })
       .order('scheduled_date', { ascending: true })
