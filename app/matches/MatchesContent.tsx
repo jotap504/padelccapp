@@ -210,12 +210,6 @@ export default function MatchesContent() {
           >
             {showCreateForm ? 'Cancelar' : 'Crear Partido'}
           </button>
-          <button
-            onClick={() => setShowOnlyMyMatches(!showOnlyMyMatches)}
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            {showOnlyMyMatches ? 'Ver todos mis partidos' : 'Ver solo mis participaciones'}
-          </button>
         </div>
 
         {showCreateForm && (
