@@ -16,12 +16,14 @@ interface PlayerProgress {
   requirements_met: {
     points: boolean
     matches_won_same_level: boolean
+    matches_won_higher_level: boolean
     min_total_matches: boolean
     min_win_rate: boolean
   }
   missing_requirements: {
     points: number
     matches_won_same_level: number
+    matches_won_higher_level: number
     min_total_matches: number
     min_win_rate: number
   }
@@ -191,6 +193,7 @@ export default function PromotionProgressPage() {
   const pointsPercentage = (progress.current_points / config.category_points_max) * 100
   const matchesPercentage = (progress.total_matches / config.min_total_matches) * 100
   const winRatePercentage = (progress.effectiveness_rate / config.min_win_rate) * 100
+  const winsHigherLevelPercentage = ((config.matches_won_higher_level - progress.missing_requirements.matches_won_higher_level) / config.matches_won_higher_level) * 100
 
   return (
     <MainLayout>
@@ -277,13 +280,32 @@ export default function PromotionProgressPage() {
                 </span>
               </div>
               <div className="w-full bg-gray-700 rounded-full h-3">
-                <div 
+                <div
                   className={`h-3 rounded-full transition-all duration-300 ${getProgressBarColor(winRatePercentage)}`}
                   style={{ width: `${Math.min(winRatePercentage, 100)}%` }}
                 ></div>
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 {progress.requirements_met.min_win_rate ? '¡Requisito cumplido!' : `Te faltan ${progress.missing_requirements.min_win_rate.toFixed(1)}% de efectividad`}
+              </p>
+            </div>
+
+            {/* Wins Higher Level Progress */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-300">Victorias vs Categoría Superior</span>
+                <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.matches_won_higher_level)}`}>
+                  {config.matches_won_higher_level - progress.missing_requirements.matches_won_higher_level} / {config.matches_won_higher_level}
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-3">
+                <div
+                  className={`h-3 rounded-full transition-all duration-300 ${getProgressBarColor(winsHigherLevelPercentage)}`}
+                  style={{ width: `${Math.min(winsHigherLevelPercentage, 100)}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {progress.requirements_met.matches_won_higher_level ? '¡Requisito cumplido!' : `Te faltan ${progress.missing_requirements.matches_won_higher_level} victorias vs superior`}
               </p>
             </div>
           </div>
@@ -329,6 +351,12 @@ export default function PromotionProgressPage() {
               <span className="text-sm text-gray-300">Victorias vs mismo nivel</span>
               <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.matches_won_same_level)}`}>
                 {progress.requirements_met.matches_won_same_level ? 'Cumplido' : 'Pendiente'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+              <span className="text-sm text-gray-300">Victorias vs superior</span>
+              <span className={`text-sm font-bold ${getProgressColor(progress.requirements_met.matches_won_higher_level)}`}>
+                {progress.requirements_met.matches_won_higher_level ? 'Cumplido' : 'Pendiente'}
               </span>
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
