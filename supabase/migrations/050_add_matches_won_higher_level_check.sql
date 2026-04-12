@@ -23,25 +23,26 @@ DECLARE
     v_requirements_met JSONB := '{}';
     v_missing_requirements JSONB := '{}';
     v_wins_higher_level INTEGER := 0;
+    v_current_category INTEGER;
 BEGIN
     -- Obtener puntos actuales del jugador
     SELECT * INTO v_player_points
     FROM calculate_current_points(p_player_id, p_club_id);
-    
+
     -- Obtener categoría actual del jugador
-    SELECT current_category INTO v_player_points.current_category
+    SELECT current_category INTO v_current_category
     FROM player_category_points
     WHERE player_id = p_player_id AND club_id = p_club_id;
-    
+
     -- Si no tiene categoría, asignar la más baja
-    IF v_player_points.current_category IS NULL THEN
-        v_player_points.current_category := 8;
+    IF v_current_category IS NULL THEN
+        v_current_category := 8;
     END IF;
     
     -- Obtener requisitos de ascenso para la categoría actual
     SELECT * INTO v_requirements
     FROM category_promotion_requirements
-    WHERE from_category = v_player_points.current_category AND club_id = p_club_id;
+    WHERE from_category = v_current_category AND club_id = p_club_id;
     
     -- Si no hay requisitos, usar valores por defecto
     IF NOT FOUND THEN
@@ -86,7 +87,7 @@ BEGIN
           ) AS opponent
           JOIN users u ON u.id = (opponent->>'user_id')::uuid
           JOIN player_category_points pcp ON pcp.player_id = u.id AND pcp.club_id = p_club_id
-          WHERE pcp.current_category < v_player_points.current_category
+          WHERE pcp.current_category < v_current_category
       );
     
     -- Construir JSON de requisitos cumplidos
@@ -116,11 +117,11 @@ BEGIN
         v_player_points.effectiveness_rate >= v_requirements.min_win_rate
     );
     
-    RETURN QUERY 
-    SELECT 
+    RETURN QUERY
+    SELECT
         v_eligible,
-        v_player_points.current_category,
-        v_player_points.current_category - 1,
+        v_current_category,
+        v_current_category - 1,
         v_player_points.current_points,
         v_requirements.category_points_max,
         v_requirements_met,
