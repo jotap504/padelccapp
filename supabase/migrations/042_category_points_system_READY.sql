@@ -231,30 +231,31 @@ DECLARE
     v_eligible BOOLEAN := false;
     v_requirements_met JSONB := '{}';
     v_missing_requirements JSONB := '{}';
+    v_current_category INTEGER;
 BEGIN
     -- Obtener puntos actuales del jugador
     SELECT * INTO v_player_points
     FROM calculate_current_points(p_player_id, p_club_id);
-    
+
     -- Obtener categoría actual del jugador
-    SELECT current_category INTO v_player_points.current_category
+    SELECT current_category INTO v_current_category
     FROM player_category_points
     WHERE player_id = p_player_id AND club_id = p_club_id;
-    
+
     -- Si no tiene categoría, asignar la más baja
-    IF v_player_points.current_category IS NULL THEN
-        v_player_points.current_category := 8;
+    IF v_current_category IS NULL THEN
+        v_current_category := 8;
     END IF;
     
     -- Obtener requisitos para esta categoría
     SELECT * INTO v_requirements
     FROM category_promotion_requirements
-    WHERE club_id = p_club_id AND from_category = v_player_points.current_category;
-    
+    WHERE club_id = p_club_id AND from_category = v_current_category;
+
     -- Si no hay requisitos o es la categoría más alta, no es elegible
-    IF v_requirements IS NULL OR v_player_points.current_category = 1 THEN
-        RETURN QUERY 
-        SELECT false, v_player_points.current_category, v_player_points.current_category - 1, 
+    IF v_requirements IS NULL OR v_current_category = 1 THEN
+        RETURN QUERY
+        SELECT false, v_current_category, v_current_category - 1,
                v_player_points.current_points, 0, '{}'::jsonb, '{}'::jsonb;
     END IF;
     
@@ -284,11 +285,11 @@ BEGIN
         v_player_points.effectiveness_rate >= v_requirements.min_win_rate
     );
     
-    RETURN QUERY 
-    SELECT 
+    RETURN QUERY
+    SELECT
         v_eligible,
-        v_player_points.current_category,
-        v_player_points.current_category - 1,
+        v_current_category,
+        v_current_category - 1,
         v_player_points.current_points,
         v_requirements.category_points_max,
         v_requirements_met,
