@@ -62,14 +62,14 @@ BEGIN
     WHERE m.status = 'confirmed'
       AND (
           -- Jugador está en team_a y ganó
-          (player_a->>'user_id' = p_player_id AND 
+          ((player_a->>'user_id')::uuid = p_player_id AND
            EXISTS (
                SELECT 1 FROM jsonb_array_elements(m.sets) AS s
                WHERE (s->>'team_a')::int > (s->>'team_b')::int
            )
           ) OR
           -- Jugador está en team_b y ganó
-          (player_b->>'user_id' = p_player_id AND 
+          ((player_b->>'user_id')::uuid = p_player_id AND
            EXISTS (
                SELECT 1 FROM jsonb_array_elements(m.sets) AS s
                WHERE (s->>'team_b')::int > (s->>'team_a')::int
