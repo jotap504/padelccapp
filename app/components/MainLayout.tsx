@@ -108,7 +108,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <span className="text-white font-bold text-sm">P</span>
             </div>
             <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-              PadelCC
+              Campo Chico Padel Ranking
             </span>
           </Link>
           
@@ -147,7 +147,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </div>
             <div>
               <span className="font-bold text-xl bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                PadelCC
+                Campo Chico Padel Ranking
               </span>
               <p className="text-xs text-gray-500">Sistema de Gestión</p>
             </div>
