@@ -78,10 +78,10 @@ BEGIN
       )
       AND EXISTS (
           -- Verificar que al menos un oponente tenía categoría superior
-          SELECT 1 
+          SELECT 1
           FROM jsonb_array_elements(
-              CASE 
-                  WHEN player_a->>'user_id' = p_player_id THEN m.team_b
+              CASE
+                  WHEN (player_a->>'user_id')::uuid = p_player_id THEN m.team_b
                   ELSE m.team_a
               END
           ) AS opponent
