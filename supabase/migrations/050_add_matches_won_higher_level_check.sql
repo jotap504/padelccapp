@@ -41,8 +41,8 @@ BEGIN
     
     -- Obtener requisitos de ascenso para la categoría actual
     SELECT * INTO v_requirements
-    FROM category_promotion_requirements
-    WHERE from_category = v_current_category AND club_id = p_club_id;
+    FROM category_promotion_requirements cpr
+    WHERE cpr.from_category = v_current_category AND cpr.club_id = p_club_id;
     
     -- Si no hay requisitos, usar valores por defecto
     IF NOT FOUND THEN
