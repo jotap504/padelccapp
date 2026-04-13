@@ -43,10 +43,10 @@ BEGIN
         END IF;
         
         -- Calcular games y sets ganados
-        FOR i IN 1..array_length(NEW.sets, 1) LOOP
+        FOR i IN 1..jsonb_array_length(NEW.sets) LOOP
             games_a := games_a + COALESCE((NEW.sets[i]->>'team_a')::INT, 0);
             games_b := games_b + COALESCE((NEW.sets[i]->>'team_b')::INT, 0);
-            
+
             IF COALESCE((NEW.sets[i]->>'team_a')::INT, 0) > COALESCE((NEW.sets[i]->>'team_b')::INT, 0) THEN
                 sets_a := sets_a + 1;
             ELSIF COALESCE((NEW.sets[i]->>'team_b')::INT, 0) > COALESCE((NEW.sets[i]->>'team_a')::INT, 0) THEN
